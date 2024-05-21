@@ -1,0 +1,66 @@
+/* Style for the search bar and plus button */
+.search-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .search-container input[type="text"] {
+    padding: 8px;
+    margin-right: 10px;
+  }
+  
+  /* Style for the incident list */
+  .incident-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .incident-list li {
+    cursor: pointer;
+    padding: 10px;
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+  }
+  
+  .incident-list li:hover {
+    background-color: #f0f0f0;
+  }
+  
+  /* Style for the incident details */
+  .incident-details {
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .incident-details input[type="text"],
+  .incident-details textarea,
+  .incident-details select {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .incident-details button {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .incident-details button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Style for the checkbox */
+  .incident-details label {
+    display: block;
+    margin-top: 10px;
+  }
+  
+  .incident-details label input[type="checkbox"] {
+    margin-right: 5px;
+  }
+  
