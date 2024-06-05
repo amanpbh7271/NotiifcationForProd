@@ -18,7 +18,7 @@ const IncidentsList = () => {
       try {
         if (userDetails && !dataFetched) { // Check if userDetails exist and data is not already fetched
           const username = userDetails.username;
-          const response = await fetch(`http://inpnqsmrtop01:9090/demo-0.0.1-SNAPSHOT/api/incDetailsForManager/${username}`);
+          const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/incDetailsForManager/${username}`);
           if (response.ok) {
             let data = await response.json();
             console.log(data);

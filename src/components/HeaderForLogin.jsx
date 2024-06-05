@@ -22,7 +22,7 @@ const HeaderForLogin = () => {
 
         {/* Incident Blast */}
         <Box sx={{ flex: "95%", textAlign: "right" }}>
-          <Typography variant="h5">Incident Blast</Typography>
+          <Typography variant="h5">Incident Communicator</Typography>
         </Box>
       </Toolbar>
     </AppBar>

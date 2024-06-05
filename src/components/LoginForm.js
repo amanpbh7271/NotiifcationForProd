@@ -30,7 +30,7 @@ function LoginForm({ onLoginSuccess }) {
     e.preventDefault();
     try {
       // Call the login API to authenticate the user
-      const loginResponse = await fetch("http://inpnqsmrtop01:9090/demo-0.0.1-SNAPSHOT/api/login", {
+      const loginResponse = await fetch("http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,7 +42,7 @@ function LoginForm({ onLoginSuccess }) {
         const loginData = await loginResponse.json();
 
         // Fetch the account for the user
-        const accountResponse = await fetch(`http://inpnqsmrtop01:9090/demo-0.0.1-SNAPSHOT/api/accountForUser/${username}`);
+        const accountResponse = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/accountForUser/${username}`);
         if (accountResponse.ok) {
           const accountData = await accountResponse.json();
           // Update user details with account information if userDetails exists

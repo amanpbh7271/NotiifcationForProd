@@ -62,7 +62,7 @@ const Header = () => {
         </Box>
 
         <Box sx={{ flex: "50%" }}>
-          <Typography variant="h5">Incident Blast</Typography>
+          <Typography variant="h5">Incident Communicator</Typography>
         </Box>
 
         {/* Search Inc and icon */}

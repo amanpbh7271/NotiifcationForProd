@@ -10,8 +10,8 @@ const DesktopNotification = ({ accountNames }) => {
     // Function to fetch time for priority P1 and P2
     const fetchTimeForPriorities = async () => {
       try {
-        const responseForP1 = await fetch(`http://inpnqsmrtop01:9090/demo-0.0.1-SNAPSHOT/api/timeForPriority/P1`);
-        const responseForP2 = await fetch(`http://inpnqsmrtop01:9090/demo-0.0.1-SNAPSHOT/api/timeForPriority/P2`);
+        const responseForP1 = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/timeForPriority/P1`);
+        const responseForP2 = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/timeForPriority/P2`);
         
         if (responseForP1.ok) {
           const dataforP1 = await responseForP1.json();
@@ -37,7 +37,7 @@ const DesktopNotification = ({ accountNames }) => {
     // Function to fetch incident numbers for the specified account and priority
     const fetchIncidentNumbers = async (priority, accountName) => {
       try {
-        const response = await fetch(`http://inpnqsmrtop01:9090/demo-0.0.1-SNAPSHOT/api/listOfIncFromAccountAndPriority/${priority}/${accountName}`);
+        const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/listOfIncFromAccountAndPriority/${priority}/${accountName}`);
         if (response.ok) {
           
           const data = await response.json();
