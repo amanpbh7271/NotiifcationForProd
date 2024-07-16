@@ -41,17 +41,17 @@ function LoginForm({ onLoginSuccess }) {
       if (loginResponse.status === 200) {
         const loginData = await loginResponse.json();
 
-        // Fetch the account for the user
-        const accountResponse = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/accountForUser/${username}`);
-        if (accountResponse.ok) {
-          const accountData = await accountResponse.json();
-          // Update user details with account information if userDetails exists
-          if (loginData.userDetails) {
-            loginData.userDetails.accounts = accountData.map(account => account.name);
-          }
-        } else {
-          console.error('Failed to fetch account for user:', accountResponse.statusText);
-        }
+        //Fetch the account for the user
+        // const accountResponse = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/accountForUser/${username}`);
+        // if (accountResponse.ok) {
+        //   const accountData = await accountResponse.json();
+        //   // Update user details with account information if userDetails exists
+        //   if (loginData.userDetails) {
+        //     loginData.userDetails.accounts = accountData.map(account => account.name);
+        //   }
+        // } else {
+        //   console.error('Failed to fetch account for user:', accountResponse.statusText);
+        // }
 
         localStorage.setItem("token", loginData.token);
         localStorage.setItem("userDetails", JSON.stringify(loginData.userDetails));

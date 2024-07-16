@@ -25,8 +25,8 @@ function App() {
       <div className="App">
 
         <BrowserRouter>
-        {isAuthenticated && userDetails && userDetails.accounts && (
-          <DesktopNotification accountNames={userDetails.accounts} />
+        {isAuthenticated && userDetails && (
+          <DesktopNotification />
         )}
           <Routes>
             <Route path="/LoginForm" element={<LoginForm onLoginSuccess={handleLoginSuccess} />} />

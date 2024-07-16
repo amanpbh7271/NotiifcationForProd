@@ -39,6 +39,7 @@ const UpdateIncDetails = () => {
     nextUpdate: '',
     preUpdates: [],
     incNumber: '',
+    region: '',
     account: '',
     status: '',
     statusforfileds:'',
@@ -55,6 +56,7 @@ const UpdateIncDetails = () => {
   const [timeForSubmit, setTimeForSubmit] = useState(null);
   const dataForWhatAppandCopy = ("*Below are Details for raised INC*" + "\n" + 
   "*priority*:-"+formData.priority +
+ "\n*Region* :-"+formData.region+
   "\n*Account* :-"+formData.account+
   "\n*IncNumber*:- " + formData.incNumber +
   "\n*Status*:-" + formData.status +
@@ -88,6 +90,7 @@ useEffect(() => {
             issueOwnedBy: incidentData?.[0]?.issueOwnedBy,
             preUpdates: incidentData?.[0]?.preUpdates,
             incNumber: incidentData?.[0]?.incNumber,
+            region: incidentData?.[0]?.region,
             account: incidentData?.[0]?.account,
             status: incidentData?.[0]?.status,
             statusforfileds: incidentData?.[0]?.status,
@@ -98,11 +101,11 @@ useEffect(() => {
           setDateForSubmit(incidentData?.[0]?.date.toLocaleString());
           setTimeForSubmit(incidentData?.[0]?.time);
           try {
-            const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/managerForAccount/${incidentData?.[0]?.account}`);
+            const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/managerForAccounts/${incidentData?.[0]?.account}`);
             if (response.ok) {
               console.log("response from managerfor account"+ response);
               const dataforManager = await response.json();
-              setManagersForAccount(dataforManager?.[0]?.managers);
+              setManagersForAccount(dataforManager);
             } else {
               console.error('Failed to fetch managers:', response.statusText);
             }
@@ -138,7 +141,7 @@ useEffect(() => {
    const generateWhatsAppLink = () => {
     // Construct your WhatsApp message link with the phone number and data
     
-     const phoneNumber = userDetails?.mobNumber ?? '7772980155'; 
+     const phoneNumber = userDetails?.mobile ?? '7772980155'; 
     return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(dataForWhatAppandCopy)}`;
   };
 
@@ -216,7 +219,8 @@ if (!isAuthenticated) {
 
   const detailsToCopy = submittedData ? `
   *Priority*:- ${submittedData.priority}
-  *Account*: ${submittedData.account}
+  *Region*:- ${submittedData.region}
+  *Account*:- ${submittedData.account}
   *Incident Number*:-  ${id}
   *Status*:- ${submittedData.status}
   *Description/Problem Statement*:- ${submittedData.problemStatement}
@@ -302,11 +306,27 @@ const handleCopy = () => {
 </Box>
     <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={12}>
           <TextField name="incNumber" label="Inc Number" value={formData.incNumber} onChange={handleChange} fullWidth disabled 
            required
           />
         </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <TextField
+            label="Region"
+            name="region"
+            value={formData.region}
+            onChange={handleChange}
+            fullWidth
+            InputProps={{
+              readOnly: true, // Make the TextField read-only
+            }}
+        >
+          
+        </TextField>
+        </Grid>
+
         <Grid item xs={12} sm={6}>
           <TextField
             label="Account"
@@ -408,8 +428,8 @@ const handleCopy = () => {
     }}
   >
     {Array.isArray(managersForAccount) && managersForAccount.map((manager) => (
-      <MenuItem key={manager?.name} value={manager?.name}>
-        {manager?.name}
+      <MenuItem key={manager?.Manager_Name} value={manager?.Manager_Name}>
+        {manager?.Manager_Name}
       </MenuItem>
     ))}
   </TextField>

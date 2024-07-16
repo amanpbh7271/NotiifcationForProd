@@ -32,6 +32,7 @@ const IncidentContainer = () => {
   const classes = useStyles();
   const [formData, setFormData] = useState({
     incNumber: "",
+    region: "",
     account: "",
     status: "Open",
     addStatusUpdate: "",
@@ -46,6 +47,7 @@ const IncidentContainer = () => {
     time: format(new Date(), "HH:mm") // Set initial value to current time
   });
   const [incForm, setIncForm] = useState(true);
+  const [regionOptions,setRegionOptions]= useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
   const [managersForAccount, setManagersForAccount] = useState([]);
   const userDetails = JSON.parse(localStorage.getItem("userDetails"));
@@ -55,13 +57,25 @@ const IncidentContainer = () => {
   const [whatsappLink, setWhatsAppLink] = useState("");
   const [submittedData, setSubmittedData] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [selectedRegionId, setSelectedRegionId] = useState(""); // Track selected region ID
   const navigate = useNavigate();
 
-  const handleChange = (event) => {
+
+  const handleChange = async (event) => {
+    const { name, value } = event.target;
+
     setFormData({
       ...formData,
-      [event.target.name]: event.target.value,
+      [name]: value,
     });
+
+    if (name === "region") {
+      const selectedRegion = regionOptions.find((region) => region.Region_Name === value);
+      if (selectedRegion) {
+        setSelectedRegionId(selectedRegion.Region_ID);
+        await fetchAccountOptionsForUser(selectedRegion.Region_ID);
+      }
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -115,21 +129,24 @@ const IncidentContainer = () => {
     }
   };
 
+
   useEffect(() => {
     // Fetch managers when account changes
     const fetchManagers = async () => {
       try {
+        if(formData.account){
         const response = await fetch(
-          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/managerForAccount/${formData.account}`
+          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/managerForAccounts/${formData.account}`
         );
         if (response.ok) {
           const dataforManager = await response.json();
-          setManagersForAccount(dataforManager[0]?.managers);
-          console.log("managersForAccount" + managersForAccount);
+          setManagersForAccount(dataforManager);
+          console.log("dataforManager" + dataforManager);
         } else {
           console.error("Failed to fetch managers:", response.statusText);
         }
-      } catch (error) {
+      }
+     } catch (error) {
         console.error("Error occurred while fetching managers:", error);
       }
     };
@@ -137,45 +154,79 @@ const IncidentContainer = () => {
     fetchManagers();
   }, [formData.account]);
 
-  useEffect(() => {
-    // Fetch account options for the user "Amar"
-    const fetchAccountOptionsForUser = async () => {
-      try {
-        const userNameForApi = userDetails.username;
+  const fetchAccountOptionsForUser = async (regionId) => {
+    try {
+      const userIdForApi = userDetails.user_id;
 
+      console.log("regionId  "+regionId);
+      if (userIdForApi) {
         const response = await fetch(
-          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/accountForUser/${userNameForApi}`
+          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/userAccounts/${userIdForApi}/${regionId}`
         );
+
         if (response.ok) {
           const accountData = await response.json();
-          // Extract account options from the response and update state
-        //`http://inpnqsmrtop01:9090/demo-0.0.1-SNAPSHOT/api/accountForUser/${userNameForApi}`
           setAccountOptions(accountData);
-          console.log("account" + accountData);
+          console.log("account", accountData);
         } else {
           console.error(
             "Failed to fetch account options:",
             response.statusText
           );
         }
-      } catch (error) {
-        console.error("Error occurred while fetching account options:", error);
+      }
+    } catch (error) {
+      console.error("Error occurred while fetching account options:", error);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch region options for the user 
+    const fetchRegionOptionsForUser = async () => {
+      try {
+        //const userNameForApi = userDetails.username; // Replace with the username parameter you want to pass to the API
+        const userIdForApi = userDetails.user_id;
+        console.log("userIdForApi  "+ userIdForApi);
+        //http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/regionForUser/${userNameForApi}
+        if(userIdForApi){
+        const response = await fetch(
+          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/regionForUser/${userIdForApi}`
+        );
+  
+        if (response.ok) {
+          const regionData = await response.json();
+          setRegionOptions(regionData);
+          console.log("regionOptions", regionData);
+        } else {
+          console.error(
+            "Failed to fetch region options:",
+            response.statusText
+          );
+        }
+      }
+    } catch (error) {
+        console.error(
+          "Error occurred while fetching region options:",
+          error
+        );
       }
     };
-
-    fetchAccountOptionsForUser();
+  
+    fetchRegionOptionsForUser();
   }, []);
+  
 
   useEffect(() => {
     // Generate WhatsApp link
     const generateWhatsAppLink = () => {
       // Construct your WhatsApp message link with the phone number and data
       //const  = 7772980155; // Replace with your phone number
-      const phoneNumber = userDetails?.mobNumber ?? "7772980155";
+      const phoneNumber = userDetails?.mobile ?? "7772980155";
 
       const dataForWhatsApp =
         "*Below are Details for raised INC*" + 
         "\n*priority*:-" + formData.priority+
+        "\n*Region* :-" + formData.region +
         "\n*Account* :-" + formData.account +
         "\n*IncNumber*:- " + formData.incNumber +
         "\n*Status*:-" + formData.status +
@@ -202,6 +253,7 @@ const IncidentContainer = () => {
 
   const detailsToCopy = submittedData ? `
   *Priority*:- ${submittedData.priority || ""}
+  *Region*: ${submittedData.region || ""}
   *Account*: ${submittedData.account || ""}
   *Incident Number*:- ${submittedData?.incNumber || ""}
   *Status*:- ${submittedData.status || ""}
@@ -300,7 +352,7 @@ const handleCopy = () => {
               </Box>
               <form onSubmit={handleSubmit} style={{ marginTop: "20px" }}>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={12}>
                     <TextField
                       name="incNumber"
                       label="Inc Number"
@@ -310,6 +362,25 @@ const handleCopy = () => {
                       required
                     />
                   </Grid>
+                 
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      select
+                      label="Region"
+                      name="region"
+                      value={formData.region}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                    >
+                      {regionOptions?.map((option) => (
+                        <MenuItem key={option?.Region_Name} value={option?.Region_Name}>
+                          {option?.Region_Name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+
                   <Grid item xs={12} sm={6}>
                     <TextField
                       select
@@ -321,8 +392,8 @@ const handleCopy = () => {
                       required
                     >
                       {accountOptions?.map((option) => (
-                        <MenuItem key={option?.name} value={option?.name}>
-                          {option?.name}
+                        <MenuItem key={option?.Account_Name} value={option?.Account_Name}>
+                          {option?.Account_Name}
                         </MenuItem>
                       ))}
                     </TextField>
@@ -439,8 +510,8 @@ const handleCopy = () => {
                       required
                     >
                       {managersForAccount?.map((manager) => (
-                        <MenuItem key={manager?.name} value={manager?.name}>
-                          {manager?.name}
+                        <MenuItem key={manager?.Manager_Name} value={manager?.Manager_Name}>
+                          {manager?.Manager_Name}
                         </MenuItem>
                       ))}
                     </TextField>
