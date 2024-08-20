@@ -9,6 +9,16 @@
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   }
  
+  .register-form-container {
+    margin: 20px auto;
+    padding: 20px;
+    width: 100%;
+    max-width: 600px;
+    background-color: #faf9f9;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
   .form-group {
     margin-bottom: 30px;
     text-align: left;

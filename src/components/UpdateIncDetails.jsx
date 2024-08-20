@@ -28,8 +28,8 @@ const UpdateIncDetails = () => {
   const isAuthenticated = localStorage.getItem('token');
   const userDetails = JSON.parse(localStorage.getItem('userDetails'));
   const [copied, setCopied] = useState(false); 
+  
   const [formData, setFormData] = useState({
-
     manager: '',
     workAround: '',
     businessImpact: '',
@@ -42,35 +42,35 @@ const UpdateIncDetails = () => {
     region: '',
     account: '',
     status: '',
-    statusforfileds:'',
-    date:'',
-    time:'',
-    problemStatement: ""
+    rootCause: '',
+    statusforfileds: '',
+    date: '',
+    time: '',
+    problemStatement: '',
+    impactStartDate: '',
+    impactStartTime: '',
+    impactEndDate: '',
+    impactEndTime: '',
+    minutesOfOutage: '',
+    affectedServices: '', // New field
+    problemIdentified: '', // New field
+    escalatedLevel: '', // New field
+    expertsContacted: '', // New field
+    updateFrequency: '', // New field
+    checkedWithOtherAccounts: '', // New field
+    coreExpertsInvolved: '', // New field
+    etaForResolution: '' // New field
   });
+  
+
   const [updateForm, SetUpdateForm] = useState(true);
   const [whatsAppAndCopy, SetWhatsAppAndCopy] = useState(false);
   const [isIncidentEmpty, setIsIncidentEmpty] = useState(false);
   const [managersForAccount, setManagersForAccount] = useState([]);
   const [submittedData, setSubmittedData] = useState(null);
-  const [dateForSubmit,setDateForSubmit] = useState(null);
-  const [timeForSubmit, setTimeForSubmit] = useState(null);
-  const dataForWhatAppandCopy = ("*Below are Details for raised INC*" + "\n" + 
-  "*priority*:-"+formData.priority +
- "\n*Region* :-"+formData.region+
-  "\n*Account* :-"+formData.account+
-  "\n*IncNumber*:- " + formData.incNumber +
-  "\n*Status*:-" + formData.status +
-  "\n*Description/Problem Satatement*:-" + formData.problemStatement +
-  "\n*Business impact*:-"+formData.businessImpact+
-  "\n*Work Around*:-"+formData.workAround  +
-  "\n*Date*:-"+ formData.date+
-  "\n*Time*:-"+ formData.time+
-  "\n"+"*Status Update/Next Step*:-" + formData.nextUpdate+
-  "\n*Previous Update*:-\n" + formData.preUpdates.map(update => `${update.timestamp} -- ${update.message}`).join("\n")+
-  "\n"+"*bridgeDetails*:-" + formData.bridgeDetails 
-  ); 
-
-
+  const [dataForWhatAppandCopy, setDataForWhatAppandCopy] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [newIncNumber, setNewIncNumber] = useState('');
 
 useEffect(() => {
   const fetchIncidentDetails = async () => {
@@ -97,9 +97,21 @@ useEffect(() => {
             date: format(new Date(), "yyyy-MM-dd"), // Set initial value to today's date
             time: format(new Date(), "HH:mm"), // Set initial value to current time
             problemStatement: incidentData?.[0]?.problemStatement,
-          });
-          setDateForSubmit(incidentData?.[0]?.date.toLocaleString());
-          setTimeForSubmit(incidentData?.[0]?.time);
+            impactStartDate: incidentData?.[0]?.impactStartDate ?? '',
+            impactStartTime: incidentData?.[0]?.impactStartTime ?? '',
+            impactEndDate: incidentData?.[0]?.impactEndDate ?? '',
+            impactEndTime: incidentData?.[0]?.impactEndTime ?? '',
+            minutesOfOutage: incidentData?.[0]?.minutesOfOutage ?? '',
+            rootCause: incidentData?.[0]?.rootCause ?? '',
+            affectedServices: incidentData?.[0]?.affectedServices ?? '', // New field
+            problemIdentified: incidentData?.[0]?.problemIdentified ?? '', // New field
+            escalatedLevel: incidentData?.[0]?.escalatedLevel ?? '', // New field
+            expertsContacted: incidentData?.[0]?.expertsContacted ?? '', // New field
+            updateFrequency: incidentData?.[0]?.updateFrequency ?? '', // New field
+            checkedWithOtherAccounts: incidentData?.[0]?.checkedWithOtherAccounts ?? '', // New field
+            coreExpertsInvolved: incidentData?.[0]?.coreExpertsInvolved ?? '', // New field
+            etaForResolution: incidentData?.[0]?.etaForResolution ?? '' // New field
+          });          
           try {
             const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/managerForAccounts/${incidentData?.[0]?.account}`);
             if (response.ok) {
@@ -125,16 +137,32 @@ useEffect(() => {
 }, [id]);
 
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+// const handleChange = (e) => {
+//   const { name, value } = e.target;
+//   setFormData({
+//     ...formData,
+//     [name]: value
+//   });
+// };
+  
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  if (name === 'status') {
+    setFormData({
+      ...formData,
+      [name]: value,
+      rootCause: value === 'Closed' ? formData.rootCause : ''  // Clear Root Cause if not 'Closed'
+    });
+  } else {
     setFormData({
       ...formData,
       [name]: value
     });
-  };
+  }
+};
 
-
-  
   
 
    // Function to generate WhatsApp message link
@@ -150,28 +178,72 @@ useEffect(() => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      
-
-    const updatedStatusUpdate = {
-      timestamp: `${formData.date} ${formData.time}`, // Combine date and time
-      message: formData.nextUpdate
-    };
-
-   
-       // Create an array with the updated status update and existing preUpdates
-       const updatedPreStatusUpdates = [updatedStatusUpdate, ...formData.preUpdates];
-   
-       // Update formData with the new preUpdates
-       const updatedFormData = {
-         ...formData,
-         preUpdates: updatedPreStatusUpdates
-       };
-   
+      const updatedStatusUpdate = {
+        timestamp: `${formData.date} ${formData.time}`, // Combine date and time
+        message: formData.nextUpdate
+      };
+  
+      // Create an array with the updated status update and existing preUpdates
+      const updatedPreStatusUpdates = [updatedStatusUpdate, ...formData.preUpdates];
+  
+      // Update formData with the new preUpdates
+      const updatedFormData = {
+        ...formData,
+        preUpdates: updatedPreStatusUpdates,
+        newIncNumber: newIncNumber,
+        isEditing: isEditing
+      };
+  
+      // Adjust impactEndDate, impactEndTime, and minutesOfOutage if status is 'Closed'
+      if (formData.status === "Closed") {
+        const startDateTime = new Date(`${formData.impactStartDate}T${formData.impactStartTime}`);
+        const endDateTime = new Date(`${formData.date}T${formData.time}`);
+        const minutesOfOutage = Math.round((endDateTime - startDateTime) / (1000 * 60)); // Convert milliseconds to minutes
+  
+        updatedFormData.impactEndDate = formData.date;
+        updatedFormData.impactEndTime = formData.time;
+        updatedFormData.minutesOfOutage = isNaN(minutesOfOutage) ? '' : minutesOfOutage; // Set minutesOfOutage or empty if calculation fails
+      }
+  
       const response = await axios.post(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/saveInc`, updatedFormData);
       if (response.status === 200) {
-        console.log('Incident details updated successfully');
-        // Redirect or display a success message
         setSubmittedData(updatedFormData); // Set submitted data
+  
+        // Update the WhatsApp and copy details
+        const updatedWhatsAppAndCopy = `
+        *Below are Details for raised INC* 
+        *Priority*:- ${updatedFormData.priority}
+        *Region*:- ${updatedFormData.region}
+        *Account*:- ${updatedFormData.account}
+        *Incident Number*:- ${isEditing ? updatedFormData.newIncNumber : updatedFormData.incNumber}
+        *Status*:- ${updatedFormData.status}
+        *Description/Problem Statement*:- ${updatedFormData.problemStatement}
+        *Business Impact*:- ${updatedFormData.businessImpact}
+        *Work Around*:- ${updatedFormData.workAround}
+        *Date*:- ${updatedFormData.date}
+        *Time*:- ${updatedFormData.time}
+        *Status Update/Next Step*:- ${updatedFormData.nextUpdate}
+        *Previous Update*:-\\n${updatedFormData.preUpdates.map(update => `${update.timestamp} -- ${update.message}`).join("\\n")}
+        *Bridge Details*:- ${updatedFormData.bridgeDetails}
+        *Impact Start Date*:- ${updatedFormData.impactStartDate}
+        *Impact Start Time*:- ${updatedFormData.impactStartTime}
+        ${updatedFormData.status === 'Closed' ? `
+        *Impact End Date*:- ${updatedFormData.impactEndDate}
+        *Impact End Time*:- ${updatedFormData.impactEndTime}
+        *Minutes of Outage*:- ${updatedFormData.minutesOfOutage}
+        *Root Cause*:- ${updatedFormData.rootCause}` : ''}
+        *Affected Services*:- ${updatedFormData.affectedServices}
+        *Problem Identified*:- ${updatedFormData.problemIdentified}
+        *Escalated Level*:- ${updatedFormData.escalatedLevel}
+        *Experts Contacted*:- ${updatedFormData.expertsContacted}
+        *Update Frequency*:- ${updatedFormData.updateFrequency}
+        *Checked With Other Accounts*:- ${updatedFormData.checkedWithOtherAccounts}
+        *Core Experts Involved*:- ${updatedFormData.coreExpertsInvolved}
+        *ETA For Resolution*:- ${updatedFormData.etaForResolution}
+        `;
+  
+        setDataForWhatAppandCopy(updatedWhatsAppAndCopy);
+  
         SetUpdateForm(false);
         SetWhatsAppAndCopy(true);
       } else {
@@ -180,13 +252,22 @@ useEffect(() => {
     } catch (error) {
       console.error('Error occurred while updating incident details:', error);
     }
-
   };
+  
 
   const handleClose = () => {
     navigate("/IncidentsList");
    
   };
+
+  const handleEditClick = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleInputChange = (e) => {
+    setNewIncNumber(e.target.value);
+  };
+
 
  
   
@@ -218,21 +299,37 @@ if (!isAuthenticated) {
  
 
   const detailsToCopy = submittedData ? `
-  *Priority*:- ${submittedData.priority}
-  *Region*:- ${submittedData.region}
-  *Account*:- ${submittedData.account}
-  *Incident Number*:-  ${id}
-  *Status*:- ${submittedData.status}
-  *Description/Problem Statement*:- ${submittedData.problemStatement}
-  *Business Impact*:- ${submittedData.businessImpact}
-  *Workaround*:- ${submittedData.workAround}
-  *Date*:- ${submittedData.date}
-  *Time*:- ${submittedData.time}
-  *Status Update/Next Step*:- ${submittedData.nextUpdate}
+  *Priority*:- ${submittedData.priority || ""}
+  *Region*: ${submittedData.region || ""}
+  *Account*: ${submittedData.account || ""}
+  *Incident Number*:- ${isEditing ? submittedData.newIncNumber : submittedData.incNumber}
+  *Status*:- ${submittedData.status || ""}
+  *Description/Problem Statement*:- ${submittedData.problemStatement || ""}
+  *Business Impact*:- ${submittedData.businessImpact || ""}
+  *Workaround*:- ${submittedData.workAround || ""}
+  *Date*:- ${submittedData.date || ""}
+  *Time*:- ${submittedData.time || ""}
+  *Status Update/Next Step*:- ${submittedData.nextUpdate || ""}
   *Previous Update*:- 
-   ${formData.preUpdates.map(update => `${update.timestamp} -- ${update.message}`).join('\n   ')}
-  *Bridge Details*:- ${submittedData.bridgeDetails}
+   ${submittedData.preUpdates.map(update => `${update.timestamp} -- ${update.message}`).join('\\n   ')}
+  *Bridge Details*:- ${submittedData.bridgeDetails || ""}
+  *Impact Start Date*:- ${submittedData.impactStartDate || ""}
+  *Impact Start Time*:- ${submittedData.impactStartTime || ""}
+  ${submittedData.status === 'Closed' ? `
+  *Impact End Date*:- ${submittedData.impactEndDate || ""}
+  *Impact End Time*:- ${submittedData.impactEndTime || ""}
+  *Minutes of Outage*:- ${submittedData.minutesOfOutage || ""}
+  *Root Cause*:- ${submittedData.rootCause || ""}` : ''}
+  *Affected Services*:- ${submittedData.affectedServices || ""}
+  *Problem Identified*:- ${submittedData.problemIdentified || ""}
+  *Escalated Level*:- ${submittedData.escalatedLevel || ""}
+  *Experts Contacted*:- ${submittedData.expertsContacted || ""}
+  *Update Frequency*:- ${submittedData.updateFrequency || ""}
+  *Checked With Other Accounts*:- ${submittedData.checkedWithOtherAccounts || ""}
+  *Core Experts Involved*:- ${submittedData.coreExpertsInvolved || ""}
+  *ETA For Resolution*:- ${submittedData.etaForResolution || ""}
 ` : '';
+
 
   
 const handleCopy = () => {
@@ -305,12 +402,34 @@ const handleCopy = () => {
   </IconButton>
 </Box>
     <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={12}>
-          <TextField name="incNumber" label="Inc Number" value={formData.incNumber} onChange={handleChange} fullWidth disabled 
-           required
-          />
-        </Grid>
+    <Grid container spacing={2}>
+            <Grid item sm={9}>
+              {isEditing ? (
+                <TextField
+                  label="INC Number"
+                  value={newIncNumber}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                />
+              ) : (
+                <TextField
+                  label="INC Number"
+                  value={formData.incNumber}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  fullWidth
+                />
+              )}
+            </Grid>
+
+            <Grid item sm={3}>
+              <Button variant="contained" color="primary" onClick={handleEditClick}>
+                Edit INC Number
+              </Button>
+            </Grid>
+       
 
         <Grid item xs={12} sm={6}>
           <TextField
@@ -450,6 +569,7 @@ const handleCopy = () => {
           </TextField>
         </Grid>
          {/* start time */}
+        
         { formData.statusforfileds !== 'Closed' && (
         <Grid item xs={12} sm={6}>
                     <TextField
@@ -486,45 +606,102 @@ const handleCopy = () => {
                       }}
                     />
                   </Grid> )}
-                  
+
 
                   { formData.statusforfileds === 'Closed' && (
-        <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Date"
-                      type="date"
-                      name="dateForSubmit"
-                      value={dateForSubmit}
+<Grid item xs={12} sm={6}>
+  <TextField
+    label="Impact Start Date"
+    type="date"
+    name="impactStartDate"
+    value={formData.impactStartDate}
+    onChange={handleChange}
+    fullWidth
+   
+    InputLabelProps={{
+      shrink: true,
+    }}
+    InputProps={{
+      readOnly: formData.statusforfileds === 'Closed',
+    }}
+  />
+</Grid> )}
 
-                      fullWidth
-                      required
-                      disabled={formData.statusforfileds === 'Closed'}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
-                  </Grid>
-                   )}
-                   { formData.statusforfileds === 'Closed' && (
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Time"
-                      type="time"
-                      name="timeForSubmit"
-                      value={timeForSubmit}
-                      
-                      fullWidth
-                      required
-                      disabled={formData.statusforfileds === 'Closed'}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                      inputProps={{
-                        step: 300, // 5 minute intervals
-                      }}
-                    />
-                  </Grid> )}
-                 
+{ formData.statusforfileds === 'Closed' && (
+<Grid item xs={12} sm={6}>
+  <TextField
+    label="Impact Start Time"
+    type="time"
+    name="impactStartTime"
+    value={formData.impactStartTime}
+    onChange={handleChange}
+    fullWidth
+    
+    InputLabelProps={{
+      shrink: true,
+    }}
+    InputProps={{
+      readOnly: formData.statusforfileds === 'Closed',
+    }}
+    inputProps={{
+      step: 300, // 5 minute intervals
+    }}
+  />
+</Grid> )}
+
+{ formData.statusforfileds === 'Closed' && (
+<Grid item xs={12} sm={6}>
+  <TextField
+    label="Impact End Date"
+    type="date"
+    name="impactEndDate"
+    value={formData.impactEndDate}
+    onChange={handleChange}
+    fullWidth
+    
+    InputLabelProps={{
+      shrink: true,
+    }}
+    InputProps={{
+      readOnly: formData.statusforfileds === 'Closed',
+    }}
+  />
+</Grid> )}
+
+{ formData.statusforfileds === 'Closed' && (
+<Grid item xs={12} sm={6}>
+  <TextField
+    label="Minutes of Outage"
+    name="minutesOfOutage"
+    value={formData.minutesOfOutage}
+    fullWidth
+   
+    InputProps={{
+      readOnly: true,
+    }}
+  />
+</Grid>
+)}
+
+
+
+
+      {formData.status === 'Closed' && (
+        <Grid item xs={12}>
+          <TextField
+            name="rootCause"
+            label="Root Cause"
+            value={formData.rootCause || ''}
+            onChange={handleChange}
+            fullWidth
+            multiline
+            rows={1}
+            InputProps={{
+              readOnly: formData.statusforfileds === 'Closed',
+            }}
+          />
+        </Grid>
+      )}
 
         <Grid item xs={12}>
           <TextField name="businessImpact" label="Business Impact" value={formData.businessImpact} onChange={handleChange} fullWidth multiline rows={1} 
@@ -540,6 +717,9 @@ const handleCopy = () => {
           }}
           />
         </Grid>
+
+       
+
         <Grid item xs={12}>
           <TextField name="bridgeDetails" label="Bridge Details" value={formData.bridgeDetails} onChange={handleChange} fullWidth multiline rows={1} 
           InputProps={{
@@ -556,6 +736,99 @@ const handleCopy = () => {
           }}
           />
         </Grid>
+
+        <Grid item xs={12} sm={6}>
+  <TextField
+    name="affectedServices"
+    label="Affected Services"
+    value={formData.affectedServices}
+    onChange={handleChange}
+    fullWidth
+    required
+  />
+</Grid>
+
+<Grid item xs={12} sm={6}>
+  <TextField
+    select
+    name="problemIdentified"
+    label="Problem Identified"
+    value={formData.problemIdentified}
+    onChange={handleChange}
+    fullWidth
+    required
+  >
+    <MenuItem value="yes">Yes</MenuItem>
+    <MenuItem value="no">No</MenuItem>
+  </TextField>
+</Grid>
+
+<Grid item xs={12} sm={6}>
+  <TextField
+    name="escalatedLevel"
+    label="Escalated Level"
+    value={formData.escalatedLevel}
+    onChange={handleChange}
+    fullWidth
+    required
+  />
+</Grid>
+
+<Grid item xs={12} sm={6}>
+  <TextField
+    name="expertsContacted"
+    label="Experts Contacted"
+    value={formData.expertsContacted}
+    onChange={handleChange}
+    fullWidth
+    required
+  />
+</Grid>
+
+<Grid item xs={12} sm={6}>
+  <TextField
+    name="updateFrequency"
+    label="Update Frequency"
+    value={formData.updateFrequency}
+    onChange={handleChange}
+    fullWidth
+    required
+  />
+</Grid>
+
+<Grid item xs={12} sm={6}>
+  <TextField
+    name="checkedWithOtherAccounts"
+    label="Checked With Other Accounts"
+    value={formData.checkedWithOtherAccounts}
+    onChange={handleChange}
+    fullWidth
+    required
+  />
+</Grid>
+
+<Grid item xs={12} sm={6}>
+  <TextField
+    name="coreExpertsInvolved"
+    label="Core Experts Involved"
+    value={formData.coreExpertsInvolved}
+    onChange={handleChange}
+    fullWidth
+    required
+  />
+</Grid>
+
+<Grid item xs={12} sm={6}>
+  <TextField
+    name="etaForResolution"
+    label="ETA For Resolution"
+    value={formData.etaForResolution}
+    onChange={handleChange}
+    fullWidth
+    required
+  />
+</Grid>
+
        
          {formData.statusforfileds !== 'Closed' && (       
         <Grid item xs={3}>
@@ -563,14 +836,15 @@ const handleCopy = () => {
             Update Details
           </Button>
         </Grid>)}
+
+        
       </Grid>
     </form>
     </div> )}
    
     {whatsAppAndCopy && (
   <Container maxWidth="md" style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '16px', marginTop: '20px' }}>
-     
-   <Box display="flex" alignItems="center" justifyContent="space-between">
+    <Box display="flex" alignItems="center" justifyContent="space-between">
       <Typography variant="h5" gutterBottom style={{ width: '95%', textAlign: 'left' }}>
         Scan QR for sending details to WhatsApp
       </Typography>
@@ -578,12 +852,13 @@ const handleCopy = () => {
         <CloseIcon />
       </IconButton>
     </Box>
-     {/* Add space between the text and QRCode */}
-     <Box mb={2} />
+    {/* Add space between the text and QRCode */}
+    <Box mb={2} />
     {/* Call the WhatsAppQRCode component with the phoneNumber and data props */}
-    <QRCode value={whatsappLink} />
+    <QRCode value={whatsappLink} size={256} /> {/* Adjust the size as needed */}
   </Container>
 )}
+
 
 
 {submittedData && (

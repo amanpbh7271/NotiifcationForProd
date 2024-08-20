@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { Snackbar, Alert, Button } from '@mui/material'; // Added Button import
 import amodocs from "./amdocs_2.png";
 import "../styles/LoginForm.css";
 import HeaderForLogin from "./HeaderForLogin";
@@ -12,11 +13,13 @@ const Container = styled.div`
   height: 100vh;
 `;
 
+
 function LoginForm({ onLoginSuccess }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const handleUsernameChange = (e) => {
     setUsername(e.target.value);
@@ -41,18 +44,6 @@ function LoginForm({ onLoginSuccess }) {
       if (loginResponse.status === 200) {
         const loginData = await loginResponse.json();
 
-        //Fetch the account for the user
-        // const accountResponse = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/accountForUser/${username}`);
-        // if (accountResponse.ok) {
-        //   const accountData = await accountResponse.json();
-        //   // Update user details with account information if userDetails exists
-        //   if (loginData.userDetails) {
-        //     loginData.userDetails.accounts = accountData.map(account => account.name);
-        //   }
-        // } else {
-        //   console.error('Failed to fetch account for user:', accountResponse.statusText);
-        // }
-
         localStorage.setItem("token", loginData.token);
         localStorage.setItem("userDetails", JSON.stringify(loginData.userDetails));
 
@@ -66,15 +57,27 @@ function LoginForm({ onLoginSuccess }) {
         setPassword("");
         // If authentication fails, display an error message
         setErrorMessage("Invalid username or password");
+        setOpenSnackbar(true);
       } else {
         // If any other error occurs, display a generic error message
         setErrorMessage("An error occurred while processing your request.");
+        setOpenSnackbar(true);
       }
     } catch (error) {
       console.error("Error:", error);
       // If an error occurs during the login process, display a generic error message
       setErrorMessage("An error occurred while processing your request.");
+      setOpenSnackbar(true);
     }
+  };
+
+  const handleRegisterClick = () => {
+    // Navigate to the registration page
+    navigate("/RegistrationForm");
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
   };
 
   return (
@@ -84,7 +87,7 @@ function LoginForm({ onLoginSuccess }) {
         <img src={amodocs} alt="Logo" className="login-logo" />
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">Ntnet Id</label>
             <input
               type="text"
               id="username"
@@ -105,12 +108,26 @@ function LoginForm({ onLoginSuccess }) {
           </div>
           <button type="submit">Login</button>
         </form>
-        {errorMessage && (
-          <div className="error-message" style={{ marginTop: "1em" }}>
-            {errorMessage}
-          </div>
-        )}
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={handleRegisterClick}
+          style={{ marginTop: "1em" }}
+        >
+          Register
+        </Button>
       </div>
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{ width: '400px' }} // Increased width
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%', fontSize: '1.2rem', padding: '20px' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
       <footer> All rights are reserved by Amdocs</footer>
     </Container>
   );

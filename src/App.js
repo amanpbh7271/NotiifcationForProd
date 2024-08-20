@@ -8,6 +8,7 @@ import UpdateIncDetails from './components/UpdateIncDetails.jsx';
 import IncidentsList from './components/IncidentsList.jsx';
 import DesktopNotification from './components/DesktopNotification.jsx'; // Import the DesktopNotification component
 import { isLoggedIn } from './utils/auth'; // Import your authentication function
+import RegistrationForm from './components/RegistrationForm.jsx'
 
 
 
@@ -32,11 +33,12 @@ function App() {
             <Route path="/LoginForm" element={<LoginForm onLoginSuccess={handleLoginSuccess} />} />
             <Route path="/IncidentContainer" element={<IncidentContainer />} />
             <Route path="/UpdateIncDetails/:id" element={<UpdateIncDetails />} />
+
             <Route
             path="/IncidentsList" // Update path to match the component
             element={isAuthenticated ? <IncidentsList/> : <Navigate to="/" />}
           />
-            
+            <Route path="/RegistrationForm" element={<RegistrationForm />} />
           </Routes>
         </BrowserRouter>
       </div>

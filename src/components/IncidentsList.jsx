@@ -11,14 +11,44 @@ const IncidentsList = () => {
   const isAuthenticated = localStorage.getItem('token');
   const userDetails = JSON.parse(localStorage.getItem('userDetails')); // Retrieve user details from local storage
   const [dataFetched, setDataFetched] = useState(false); // Track whether data is fetched
+  const [accountNames, setAccountNames] = useState([]); // Store account names
+  const [userId, setUserId] = useState(null); // Store user ID
 
   useEffect(() => {
-    // Fetch incidents data only on component mount or when user details change
+    if (userDetails) {
+      setUserId(userDetails.user_id); // Set user_id from userDetails
+    }
+  }, [userDetails]);
+
+  useEffect(() => {
+    // Fetch account names for the user
+    const fetchAccountNames = async () => {
+      if (userId) {
+        try {
+          const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/accountForUser/${userId}`);
+          if (response.ok) {
+            const data = await response.json();
+            const names = data.map(account => account.Account_Name);
+            setAccountNames(names); // Store array of account names 
+            console.log("Accountsname", names);
+          } else {
+            console.error('Failed to fetch account names:', response.statusText);
+          }
+        } catch (error) {
+          console.error('Error occurred while fetching account names:', error);
+        }
+      }
+    };
+
+    fetchAccountNames();
+  }, [userId]);
+
+  useEffect(() => {
+    // Fetch incidents data only on component mount or when account names change
     const fetchData = async () => {
       try {
-        if (userDetails && !dataFetched) { // Check if userDetails exist and data is not already fetched
-          const username = userDetails.username;
-          const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/incDetailsForManager/${username}`);
+        if (accountNames.length > 0 && !dataFetched) { // Check if accountNames exist and data is not already fetched
+          const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/incidentsForAccounts?accounts=${accountNames.join(',')}`);
           if (response.ok) {
             let data = await response.json();
             console.log(data);
@@ -33,7 +63,7 @@ const IncidentsList = () => {
       }
     };
     fetchData();
-  }, [userDetails, dataFetched]); // Add dataFetched to the dependency array
+  }, [accountNames, dataFetched]); // Add dataFetched to the dependency array
 
   // Paginate to a specific page
   const paginate = (pageNumber) => {

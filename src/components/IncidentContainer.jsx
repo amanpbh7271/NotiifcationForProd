@@ -44,8 +44,21 @@ const IncidentContainer = () => {
     priority: "",
     problemStatement: "",
     date: format(new Date(), "yyyy-MM-dd"), // Set initial value to today's date
-    time: format(new Date(), "HH:mm") // Set initial value to current time
+    time: format(new Date(), "HH:mm"), // Set initial value to current time
+    // new added fields
+    
+    affectedServices: "", // New field
+    problemIdentified: "", // New field (yes or no)
+    escalatedLevel: "", // New field
+    expertsContacted: "", // New field
+    updateFrequency: "", // New field (10, 15 min time period)
+    checkedWithOtherAccounts: "", // New field
+    coreExpertsInvolved: "", // New field
+    etaForResolution: "", // New field
+    isEditing: false,
+    newIncNumber:""
   });
+
   const [incForm, setIncForm] = useState(true);
   const [regionOptions,setRegionOptions]= useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
@@ -99,6 +112,8 @@ const IncidentContainer = () => {
       ...formData,
       date: currentDateFormatted, // Add current date
       time: currentTimeFormatted, // Add current time
+      impactStartDate: currentDateFormatted, // Set impactStartDate to the same value as date
+      impactStartTime: currentTimeFormatted, // Set impactStartTime to the same value as time
       preUpdates: preUpdates, // Add pre-updates
       nextUpdate: formData.addStatusUpdate,
     };
@@ -106,7 +121,7 @@ const IncidentContainer = () => {
     event.preventDefault();
     try {
       const response = await fetch(
-        "http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/saveInc",
+        'http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/saveInc',
         {
           method: "POST",
           headers: {
@@ -224,20 +239,28 @@ const IncidentContainer = () => {
       const phoneNumber = userDetails?.mobile ?? "7772980155";
 
       const dataForWhatsApp =
-        "*Below are Details for raised INC*" + 
-        "\n*priority*:-" + formData.priority+
-        "\n*Region* :-" + formData.region +
-        "\n*Account* :-" + formData.account +
-        "\n*IncNumber*:- " + formData.incNumber +
-        "\n*Status*:-" + formData.status +
-        "\n*Description/Problem Statement*:-" + formData.problemStatement+
-        "\n*Business impact*:-" +formData.businessImpact +
-        "\n*Work Around*:-" +formData.workAround +
-        "\n*Date*:-" + date +
-        "\n*Time*:-" + time +
-        "\n*Updated/next Status*:-\n" +  formData.addStatusUpdate +
-        "\n" +    "*bridgeDetails*:-" +  formData.bridgeDetails 
-;
+      "*Below are Details for raised INC*" +
+      "\n*priority*:-" + formData.priority +
+      "\n*Region* :-" + formData.region +
+      "\n*Account* :-" + formData.account +
+      "\n*IncNumber*:- " + formData.incNumber +
+      "\n*Status*:-" + formData.status +
+      "\n*Description/Problem Statement*:-" + formData.problemStatement +
+      "\n*Business impact*:-" + formData.businessImpact +
+      "\n*Work Around*:-" + formData.workAround +
+      "\n*Date*:-" + date +
+      "\n*Time*:-" + time +
+      "\n*Updated/next Status*:-\n" + formData.addStatusUpdate +
+      "\n*Bridge Details*:-" + formData.bridgeDetails +
+      "\n*Affected Services*:-" + formData.affectedServices +
+      "\n*Problem Identified*:-" + formData.problemIdentified +
+      "\n*Escalated Level*:-" + formData.escalatedLevel +
+      "\n*Experts Contacted*:-" + formData.expertsContacted +
+      "\n*Update Frequency*:-" + formData.updateFrequency +
+      "\n*Checked With Other Accounts*:-" + formData.checkedWithOtherAccounts +
+      "\n*Core Experts Involved*:-" + formData.coreExpertsInvolved +
+      "\n*ETA For Resolution*:-" + formData.etaForResolution;
+    
       return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
         dataForWhatsApp
       )}`;
@@ -263,8 +286,17 @@ const IncidentContainer = () => {
   *Date*:- ${submittedData.date || ""}
   *Time*:- ${submittedData.time || ""}
   *Status Update/Next Step*:- ${submittedData.nextUpdate || ""}
-  *Bridge Details*:- ${submittedData.bridgeDetails ||""}
+  *Bridge Details*:- ${submittedData.bridgeDetails || ""}
+  *Affected Services*:- ${submittedData.affectedServices || ""}
+  *Problem Identified*:- ${submittedData.problemIdentified || ""}
+  *Escalated Level*:- ${submittedData.escalatedLevel || ""}
+  *Experts Contacted*:- ${submittedData.expertsContacted || ""}
+  *Update Frequency*:- ${submittedData.updateFrequency || ""}
+  *Checked With Other Accounts*:- ${submittedData.checkedWithOtherAccounts || ""}
+  *Core Experts Involved*:- ${submittedData.coreExpertsInvolved || ""}
+  *ETA For Resolution*:- ${submittedData.etaForResolution || ""}
 ` : '';
+
 
 const handleCopy = () => {
   // Define the text to copy
@@ -528,7 +560,7 @@ const handleCopy = () => {
                       required
                     >
                       <MenuItem value="Amdocs">Amdocs</MenuItem>
-                      <MenuItem value="TechM">TechM</MenuItem>
+                      <MenuItem value="Others">Others</MenuItem>
                     </TextField>
                   </Grid>
 
@@ -553,6 +585,91 @@ const handleCopy = () => {
                       fullWidth
                       multiline
                       rows={1}
+                      required
+                    />
+                  </Grid>
+                    {/* New fields */}
+                    <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="affectedServices"
+                      label="Affected Services"
+                      value={formData.affectedServices}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      select
+                      label="Problem Identified?"
+                      name="problemIdentified"
+                      value={formData.problemIdentified}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                    >
+                      <MenuItem value="yes">Yes</MenuItem>
+                      <MenuItem value="no">No</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="escalatedLevel"
+                      label="Escalated to which external level"
+                      value={formData.escalatedLevel}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="expertsContacted"
+                      label="Experts needed/contacted"
+                      value={formData.expertsContacted}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="updateFrequency"
+                      label="Expected update frequency"
+                      value={formData.updateFrequency}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="checkedWithOtherAccounts"
+                      label="Checked with other accounts"
+                      value={formData.checkedWithOtherAccounts}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="coreExpertsInvolved"
+                      label="Core experts involved"
+                      value={formData.coreExpertsInvolved}
+                      onChange={handleChange}
+                      fullWidth
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      name="etaForResolution"
+                      label="ETA for resolution"
+                      value={formData.etaForResolution}
+                      onChange={handleChange}
+                      fullWidth
                       required
                     />
                   </Grid>

@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 
 const DesktopNotification = () => {
   const [incidentNumbersP1, setIncidentNumbersP1] = useState({});
@@ -7,6 +10,9 @@ const DesktopNotification = () => {
   const [timeForPriorityP2, setTimeForPriorityP2] = useState(10); // Default to 30 minutes
   const [accountNames, setAccountNames] = useState([]); // State to store account names
   const [userId, setUserId] = useState(null); // State to store user_id
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('info');
   const userDetails = JSON.parse(localStorage.getItem('userDetails'));
 
   useEffect(() => {
@@ -24,7 +30,7 @@ const DesktopNotification = () => {
           if (response.ok) {
             const data = await response.json();
             const names = data.map(account => account.Account_Name);
-            setAccountNames(names); // Store array of account  names 
+            setAccountNames(names); // Store array of account names 
             console.log("Accountsname", names);
           } else {
             console.error('Failed to fetch account names:', response.statusText);
@@ -116,50 +122,54 @@ const DesktopNotification = () => {
   }, [accountNames, timeForPriorityP1, timeForPriorityP2]);
 
   useEffect(() => {
-    // Function to show desktop notification with incident numbers
-    const showNotification = (priority, incidentNumbers, accountName) => {
-      // Check if the browser supports notifications
-      console.log("notification before window");
-      if (!("Notification" in window)) {
-        console.error("This browser does not support desktop notification");
-        return;
-      }
+    // Function to show custom notification with incident numbers
+    const showCustomNotification = (priority, incidentNumbers, accountName) => {
+      // Construct notification message with incident numbers
+      const notificationMessage = `Open ${priority} Incidents for Account: ${accountName}`;
+      const notificationDetails = incidentNumbers ? incidentNumbers.join('\n') : '';
 
-      // Check if permission is granted
-      if (Notification.permission === "granted") {
-        console.log("notification granted window");
-        // Construct notification message with incident numbers
-        const notificationMessage = incidentNumbers ? incidentNumbers.join('\n') : '';
-
-        // Show notification with incident numbers
-        new Notification(`Open ${priority} Incidents for Account: ${accountName}`, { body: notificationMessage });
-      } else if (Notification.permission !== "denied") {
-        // Request permission
-        Notification.requestPermission().then(permission => {
-          console.log("notification permission window");
-          if (permission === "granted") {
-            // Show notification with incident numbers
-            console.log("notification permission window permission === 141 lines");
-            showNotification(priority, incidentNumbers, accountName);
-          }
-        });
-      }
+      // Add the notification to the state
+      setSnackbarMessage(`${notificationMessage}\n${notificationDetails}`);
+      setSnackbarSeverity('info');
+      setOpenSnackbar(true);
     };
 
     // Show notifications for each account and priority
     if (accountNames) {
       accountNames.forEach(accountName => {
         if (incidentNumbersP1[accountName]?.length > 0) {
-          showNotification('P1', incidentNumbersP1[accountName], accountName);
+          showCustomNotification('P1', incidentNumbersP1[accountName], accountName);
         }
         if (incidentNumbersP2[accountName]?.length > 0) {
-          showNotification('P2', incidentNumbersP2[accountName], accountName);
+          showCustomNotification('P2', incidentNumbersP2[accountName], accountName);
         }
       });
     }
   }, [incidentNumbersP1, incidentNumbersP2, accountNames]);
 
-  return null; // This component doesn't render anything
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+  };
+
+  return (
+    <div>
+      <Snackbar
+        open={openSnackbar}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{ width: '400px' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%', fontSize: '1.2rem', padding: '20px' }}>
+          {snackbarMessage}
+          {snackbarSeverity === 'success' && (
+            <Button color="inherit" size="small" onClick={handleCloseSnackbar}>
+              Back to Login
+            </Button>
+          )}
+        </Alert>
+      </Snackbar>
+    </div>
+  );
 };
 
 export default DesktopNotification;
