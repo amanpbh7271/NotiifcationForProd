@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Container,
   Typography,
@@ -26,6 +26,13 @@ const useStyles = makeStyles(() => ({
     marginTop: "32px", // Adjust this value as needed
     maxWidth: 1000,
   },
+  incNumberError: {
+    color: "red",
+  },
+  incNumberHighlight: {
+    // Add this class
+    borderColor: "red",
+  },
 }));
 
 const IncidentContainer = () => {
@@ -46,7 +53,7 @@ const IncidentContainer = () => {
     date: format(new Date(), "yyyy-MM-dd"), // Set initial value to today's date
     time: format(new Date(), "HH:mm"), // Set initial value to current time
     // new added fields
-    
+
     affectedServices: "", // New field
     problemIdentified: "", // New field (yes or no)
     escalatedLevel: "", // New field
@@ -56,11 +63,11 @@ const IncidentContainer = () => {
     coreExpertsInvolved: "", // New field
     etaForResolution: "", // New field
     isEditing: false,
-    newIncNumber:""
+    newIncNumber: "",
   });
 
   const [incForm, setIncForm] = useState(true);
-  const [regionOptions,setRegionOptions]= useState([]);
+  const [regionOptions, setRegionOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
   const [managersForAccount, setManagersForAccount] = useState([]);
   const userDetails = JSON.parse(localStorage.getItem("userDetails"));
@@ -71,8 +78,9 @@ const IncidentContainer = () => {
   const [submittedData, setSubmittedData] = useState(null);
   const [copied, setCopied] = useState(false);
   const [selectedRegionId, setSelectedRegionId] = useState(""); // Track selected region ID
+  const [isIncNumberInDatabase, setIsIncNumberInDatabase] = useState(false); // Add this line
+  const incNumberRef = useRef(null);
   const navigate = useNavigate();
-
 
   const handleChange = async (event) => {
     const { name, value } = event.target;
@@ -82,8 +90,14 @@ const IncidentContainer = () => {
       [name]: value,
     });
 
+    if (name === "incNumber") {
+      setIsIncNumberInDatabase(false); // Reset the state when typing in the INC number field
+    }
+
     if (name === "region") {
-      const selectedRegion = regionOptions.find((region) => region.Region_Name === value);
+      const selectedRegion = regionOptions.find(
+        (region) => region.Region_Name === value
+      );
       if (selectedRegion) {
         setSelectedRegionId(selectedRegion.Region_ID);
         await fetchAccountOptionsForUser(selectedRegion.Region_ID);
@@ -91,37 +105,58 @@ const IncidentContainer = () => {
     }
   };
 
+  const handleIncNumberClick = () => {
+    setIsIncNumberInDatabase(false);
+  };
+
   const handleSubmit = async (event) => {
-
-
-    const currentDateFormatted = formData.date // Extract date part
-    const currentTimeFormatted = formData.time // Extract time part
-  
-    // Create pre-updates object
-    const preUpdates = [
-      {
-        timestamp: `${currentDateFormatted} ${currentTimeFormatted}`,
-        message: formData.addStatusUpdate, // Assuming statusUpdate is the message
-      },
-    ];
-    SetDate(currentDateFormatted);
-    SetTime(currentTimeFormatted);
-
-    // Include pre-updates along with other form data
-    const formDataWithDateTimeAndPreUpdates = {
-      ...formData,
-      date: currentDateFormatted, // Add current date
-      time: currentTimeFormatted, // Add current time
-      impactStartDate: currentDateFormatted, // Set impactStartDate to the same value as date
-      impactStartTime: currentTimeFormatted, // Set impactStartTime to the same value as time
-      preUpdates: preUpdates, // Add pre-updates
-      nextUpdate: formData.addStatusUpdate,
-    };
-
     event.preventDefault();
+
     try {
+      // Check if the INC number is already in the database
       const response = await fetch(
-        'http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/saveInc',
+        `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/incDetails/${formData.incNumber}`
+      );
+      if (response.ok) {
+        const incidentData = await response.json();
+        console.log("incident length is ", incidentData.length);
+        if (incidentData.length > 0) {
+          setIsIncNumberInDatabase(true);
+          incNumberRef.current.focus();
+          return; // Exit the function if the INC number is already in the database
+        } else {
+          setIsIncNumberInDatabase(false);
+        }
+      }
+
+      // Extract date and time parts
+      const currentDateFormatted = formData.date;
+      const currentTimeFormatted = formData.time;
+
+      // Create pre-updates object
+      const preUpdates = [
+        {
+          timestamp: `${currentDateFormatted} ${currentTimeFormatted}`,
+          message: formData.addStatusUpdate, // Assuming statusUpdate is the message
+        },
+      ];
+      SetDate(currentDateFormatted);
+      SetTime(currentTimeFormatted);
+
+      // Include pre-updates along with other form data
+      const formDataWithDateTimeAndPreUpdates = {
+        ...formData,
+        date: currentDateFormatted, // Add current date
+        time: currentTimeFormatted, // Add current time
+        impactStartDate: currentDateFormatted, // Set impactStartDate to the same value as date
+        impactStartTime: currentTimeFormatted, // Set impactStartTime to the same value as time
+        preUpdates: preUpdates, // Add pre-updates
+        nextUpdate: formData.addStatusUpdate,
+      };
+
+      // Save the incident data
+      const saveResponse = await fetch(
+        "http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/saveInc",
         {
           method: "POST",
           headers: {
@@ -130,7 +165,7 @@ const IncidentContainer = () => {
           body: JSON.stringify(formDataWithDateTimeAndPreUpdates),
         }
       );
-      if (response.ok) {
+      if (saveResponse.ok) {
         console.log("Incident data saved successfully");
         // Reset form after successful submission if needed
         setIncForm(false);
@@ -140,28 +175,30 @@ const IncidentContainer = () => {
         console.error("Failed to save incident data");
       }
     } catch (error) {
-      console.error("Error occurred while saving incident data:", error);
+      console.error(
+        "Error occurred while processing the incident data:",
+        error
+      );
     }
   };
-
 
   useEffect(() => {
     // Fetch managers when account changes
     const fetchManagers = async () => {
       try {
-        if(formData.account){
-        const response = await fetch(
-          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/managerForAccounts/${formData.account}`
-        );
-        if (response.ok) {
-          const dataforManager = await response.json();
-          setManagersForAccount(dataforManager);
-          console.log("dataforManager" + dataforManager);
-        } else {
-          console.error("Failed to fetch managers:", response.statusText);
+        if (formData.account) {
+          const response = await fetch(
+            `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/managerForAccounts/${formData.account}`
+          );
+          if (response.ok) {
+            const dataforManager = await response.json();
+            setManagersForAccount(dataforManager);
+            console.log("dataforManager" + dataforManager);
+          } else {
+            console.error("Failed to fetch managers:", response.statusText);
+          }
         }
-      }
-     } catch (error) {
+      } catch (error) {
         console.error("Error occurred while fetching managers:", error);
       }
     };
@@ -173,7 +210,7 @@ const IncidentContainer = () => {
     try {
       const userIdForApi = userDetails.user_id;
 
-      console.log("regionId  "+regionId);
+      console.log("regionId  " + regionId);
       if (userIdForApi) {
         const response = await fetch(
           `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/userAccounts/${userIdForApi}/${regionId}`
@@ -196,40 +233,36 @@ const IncidentContainer = () => {
   };
 
   useEffect(() => {
-    // Fetch region options for the user 
+    // Fetch region options for the user
     const fetchRegionOptionsForUser = async () => {
       try {
         //const userNameForApi = userDetails.username; // Replace with the username parameter you want to pass to the API
         const userIdForApi = userDetails.user_id;
-        console.log("userIdForApi  "+ userIdForApi);
+        console.log("userIdForApi  " + userIdForApi);
         //http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/regionForUser/${userNameForApi}
-        if(userIdForApi){
-        const response = await fetch(
-          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/regionForUser/${userIdForApi}`
-        );
-  
-        if (response.ok) {
-          const regionData = await response.json();
-          setRegionOptions(regionData);
-          console.log("regionOptions", regionData);
-        } else {
-          console.error(
-            "Failed to fetch region options:",
-            response.statusText
+        if (userIdForApi) {
+          const response = await fetch(
+            `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/regionForUser/${userIdForApi}`
           );
+
+          if (response.ok) {
+            const regionData = await response.json();
+            setRegionOptions(regionData);
+            console.log("regionOptions", regionData);
+          } else {
+            console.error(
+              "Failed to fetch region options:",
+              response.statusText
+            );
+          }
         }
-      }
-    } catch (error) {
-        console.error(
-          "Error occurred while fetching region options:",
-          error
-        );
+      } catch (error) {
+        console.error("Error occurred while fetching region options:", error);
       }
     };
-  
+
     fetchRegionOptionsForUser();
   }, []);
-  
 
   useEffect(() => {
     // Generate WhatsApp link
@@ -239,28 +272,48 @@ const IncidentContainer = () => {
       const phoneNumber = userDetails?.mobile ?? "7772980155";
 
       const dataForWhatsApp =
-      "*Below are Details for raised INC*" +
-      "\n*priority*:-" + formData.priority +
-      "\n*Region* :-" + formData.region +
-      "\n*Account* :-" + formData.account +
-      "\n*IncNumber*:- " + formData.incNumber +
-      "\n*Status*:-" + formData.status +
-      "\n*Description/Problem Statement*:-" + formData.problemStatement +
-      "\n*Business impact*:-" + formData.businessImpact +
-      "\n*Work Around*:-" + formData.workAround +
-      "\n*Date*:-" + date +
-      "\n*Time*:-" + time +
-      "\n*Updated/next Status*:-\n" + formData.addStatusUpdate +
-      "\n*Bridge Details*:-" + formData.bridgeDetails +
-      "\n*Affected Services*:-" + formData.affectedServices +
-      "\n*Problem Identified*:-" + formData.problemIdentified +
-      "\n*Escalated Level*:-" + formData.escalatedLevel +
-      "\n*Experts Contacted*:-" + formData.expertsContacted +
-      "\n*Update Frequency*:-" + formData.updateFrequency +
-      "\n*Checked With Other Accounts*:-" + formData.checkedWithOtherAccounts +
-      "\n*Core Experts Involved*:-" + formData.coreExpertsInvolved +
-      "\n*ETA For Resolution*:-" + formData.etaForResolution;
-    
+        "*Below are Details for raised INC*" +
+        "\n*priority*:-" +
+        formData.priority +
+        "\n*Region* :-" +
+        formData.region +
+        "\n*Account* :-" +
+        formData.account +
+        "\n*IncNumber*:- " +
+        formData.incNumber +
+        "\n*Status*:-" +
+        formData.status +
+        "\n*Description/Problem Statement*:-" +
+        formData.problemStatement +
+        "\n*Business impact*:-" +
+        formData.businessImpact +
+        "\n*Work Around*:-" +
+        formData.workAround +
+        "\n*Date*:-" +
+        date +
+        "\n*Time*:-" +
+        time +
+        "\n*Updated/next Status*:-\n" +
+        formData.addStatusUpdate +
+        "\n*Bridge Details*:-" +
+        formData.bridgeDetails +
+        "\n*Affected Services*:-" +
+        formData.affectedServices +
+        "\n*Problem Identified*:-" +
+        formData.problemIdentified +
+        "\n*Escalated Level*:-" +
+        formData.escalatedLevel +
+        "\n*Experts Contacted*:-" +
+        formData.expertsContacted +
+        "\n*Update Frequency In Mins*:-" +
+        formData.updateFrequency +
+        "\n*Checked With Other Accounts*:-" +
+        formData.checkedWithOtherAccounts +
+        "\n*Core Experts Involved*:-" +
+        formData.coreExpertsInvolved +
+        "\n*ETA For Resolution*:-" +
+        formData.etaForResolution;
+
       return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
         dataForWhatsApp
       )}`;
@@ -273,8 +326,8 @@ const IncidentContainer = () => {
     navigate("/IncidentsList");
   };
 
-
-  const detailsToCopy = submittedData ? `
+  const detailsToCopy = submittedData
+    ? `
   *Priority*:- ${submittedData.priority || ""}
   *Region*: ${submittedData.region || ""}
   *Account*: ${submittedData.account || ""}
@@ -291,64 +344,74 @@ const IncidentContainer = () => {
   *Problem Identified*:- ${submittedData.problemIdentified || ""}
   *Escalated Level*:- ${submittedData.escalatedLevel || ""}
   *Experts Contacted*:- ${submittedData.expertsContacted || ""}
-  *Update Frequency*:- ${submittedData.updateFrequency || ""}
-  *Checked With Other Accounts*:- ${submittedData.checkedWithOtherAccounts || ""}
+  *Update Frequency In Mins*:- ${submittedData.updateFrequency || ""}
+  *Checked With Other Accounts*:- ${
+    submittedData.checkedWithOtherAccounts || ""
+  }
   *Core Experts Involved*:- ${submittedData.coreExpertsInvolved || ""}
   *ETA For Resolution*:- ${submittedData.etaForResolution || ""}
-` : '';
+`
+    : "";
 
+  const handleCopy = () => {
+    // Define the text to copy
 
-const handleCopy = () => {
-  // Define the text to copy
-  
+    if (!detailsToCopy) {
+      console.error("No details to copy");
+      return;
+    }
 
-  if (!detailsToCopy) {
-    console.error('No details to copy');
-    return;
-  }
+    // Check if the Clipboard API is available and the context is secure
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard
+        .writeText(detailsToCopy)
+        .then(() => {
+          console.log("Incident details copied to clipboard");
+          setCopied(true);
+          // Clear the "Copied" message after a certain duration (e.g., 3 seconds)
+          setTimeout(() => {
+            setCopied(false);
+          }, 3000);
+        })
+        .catch((error) => {
+          console.error(
+            "Error copying incident details to clipboard using Clipboard API:",
+            error
+          );
+        });
+    } else {
+      // Fallback method for non-secure contexts or unsupported browsers
+      // Create a temporary textarea element
+      const textarea = document.createElement("textarea");
+      textarea.value = detailsToCopy;
+      document.body.appendChild(textarea);
 
-  // Check if the Clipboard API is available and the context is secure
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(detailsToCopy)
-      .then(() => {
-        console.log('Incident details copied to clipboard');
+      // Select the text in the textarea
+      textarea.select();
+      textarea.setSelectionRange(0, 99999); // For mobile devices
+
+      try {
+        // Copy the text to the clipboard
+        document.execCommand("copy");
+        console.log(
+          "Incident details copied to clipboard using fallback method"
+        );
         setCopied(true);
         // Clear the "Copied" message after a certain duration (e.g., 3 seconds)
         setTimeout(() => {
           setCopied(false);
         }, 3000);
-      })
-      .catch((error) => {
-        console.error('Error copying incident details to clipboard using Clipboard API:', error);
-      });
-  } else {
-    // Fallback method for non-secure contexts or unsupported browsers
-    // Create a temporary textarea element
-    const textarea = document.createElement('textarea');
-    textarea.value = detailsToCopy;
-    document.body.appendChild(textarea);
+      } catch (error) {
+        console.error(
+          "Error copying incident details to clipboard using fallback method:",
+          error
+        );
+      }
 
-    // Select the text in the textarea
-    textarea.select();
-    textarea.setSelectionRange(0, 99999); // For mobile devices
-
-    try {
-      // Copy the text to the clipboard
-      document.execCommand('copy');
-      console.log('Incident details copied to clipboard using fallback method');
-      setCopied(true);
-      // Clear the "Copied" message after a certain duration (e.g., 3 seconds)
-      setTimeout(() => {
-        setCopied(false);
-      }, 3000);
-    } catch (error) {
-      console.error('Error copying incident details to clipboard using fallback method:', error);
+      // Remove the temporary textarea element
+      document.body.removeChild(textarea);
     }
-
-    // Remove the temporary textarea element
-    document.body.removeChild(textarea);
-  }
-};
+  };
 
   const isAuthenticated = localStorage.getItem("token");
   console.log("isAuthenticated", isAuthenticated);
@@ -387,14 +450,27 @@ const handleCopy = () => {
                   <Grid item xs={12} sm={12}>
                     <TextField
                       name="incNumber"
-                      label="Inc Number"
+                      label="INC Number"
                       value={formData.incNumber}
                       onChange={handleChange}
+                      onClick={handleIncNumberClick}
                       fullWidth
                       required
+                      inputRef={incNumberRef} // Add this line
+                      className={
+                        isIncNumberInDatabase ? classes.incNumberHighlight : ""
+                      } // Add this line
                     />
+                    {isIncNumberInDatabase && (
+                      <Typography
+                        variant="body2"
+                        className={classes.incNumberError}
+                      >
+                        INC number is already in the database, please check.
+                      </Typography>
+                    )}
                   </Grid>
-                 
+
                   <Grid item xs={12} sm={6}>
                     <TextField
                       select
@@ -406,7 +482,10 @@ const handleCopy = () => {
                       required
                     >
                       {regionOptions?.map((option) => (
-                        <MenuItem key={option?.Region_Name} value={option?.Region_Name}>
+                        <MenuItem
+                          key={option?.Region_Name}
+                          value={option?.Region_Name}
+                        >
                           {option?.Region_Name}
                         </MenuItem>
                       ))}
@@ -424,7 +503,10 @@ const handleCopy = () => {
                       required
                     >
                       {accountOptions?.map((option) => (
-                        <MenuItem key={option?.Account_Name} value={option?.Account_Name}>
+                        <MenuItem
+                          key={option?.Account_Name}
+                          value={option?.Account_Name}
+                        >
                           {option?.Account_Name}
                         </MenuItem>
                       ))}
@@ -542,7 +624,10 @@ const handleCopy = () => {
                       required
                     >
                       {managersForAccount?.map((manager) => (
-                        <MenuItem key={manager?.Manager_Name} value={manager?.Manager_Name}>
+                        <MenuItem
+                          key={manager?.Manager_Name}
+                          value={manager?.Manager_Name}
+                        >
                           {manager?.Manager_Name}
                         </MenuItem>
                       ))}
@@ -588,8 +673,8 @@ const handleCopy = () => {
                       required
                     />
                   </Grid>
-                    {/* New fields */}
-                    <Grid item xs={12} sm={6}>
+                  {/* New fields */}
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       name="affectedServices"
                       label="Affected Services"
@@ -636,13 +721,16 @@ const handleCopy = () => {
                   <Grid item xs={12} sm={6}>
                     <TextField
                       name="updateFrequency"
-                      label="Expected update frequency"
+                      label="Expected update frequency in mins"
                       value={formData.updateFrequency}
                       onChange={handleChange}
                       fullWidth
                       required
+                      type="number"
+                      inputProps={{ min: "0" }} // Optional: to ensure only positive numbers
                     />
                   </Grid>
+
                   <Grid item xs={12} sm={6}>
                     <TextField
                       name="checkedWithOtherAccounts"
@@ -702,7 +790,7 @@ const handleCopy = () => {
                   <Typography
                     variant="h5"
                     gutterBottom
-                    style={{ width: "95%",textAlign: 'left' }}
+                    style={{ width: "95%", textAlign: "left" }}
                   >
                     Scan QR for sending details to WhatsApp
                   </Typography>
@@ -714,7 +802,7 @@ const handleCopy = () => {
                     <CloseIcon />
                   </IconButton>
                 </Box>
-                 {/* Add space between the text and QRCode */}
+                {/* Add space between the text and QRCode */}
                 <Box mb={2} />
                 {/* Call the WhatsAppQRCode component with the phoneNumber and data props */}
                 <QRCode value={whatsappLink} />
@@ -722,43 +810,67 @@ const handleCopy = () => {
             </div>
           )}
 
-{submittedData && (
-  <Container maxWidth="md" style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '16px', marginTop: '20px' }}>
-    <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-      <Typography variant="h5" gutterBottom style={{ width: '90%', textAlign: 'left'}}>
-        Submitted Incident Details
-      </Typography>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        {!copied ? (
-          <Button
-            variant="outlined"
-            color="inherit"
-            style={{ width: "10%" }}
-            onClick={handleCopy}
-            title="Copy"
-          >
-            <FileCopyIcon />
-          </Button>
-        ) : (
-          <CheckCircleIcon sx={{ color: "green" }} />
-        )}
-        {copied && (
-          <div style={{ marginLeft: "10px", fontStyle: "italic", color: "#666" , whiteSpace: 'nowrap'}}>
-            Copied:{" "}
-            <span style={{ fontWeight: "bold" }}>incident details</span>
-          </div>
-        )}
-      </div>
-    </Box>
-    <Container maxWidth="md">
-      <Typography variant="body1" gutterBottom>
-        <pre style={{ textAlign: 'left' }}>
-          {detailsToCopy}
-        </pre>
-      </Typography>
-    </Container>
-  </Container>
-)}
+          {submittedData && (
+            <Container
+              maxWidth="md"
+              style={{
+                border: "1px solid #ccc",
+                borderRadius: "5px",
+                padding: "16px",
+                marginTop: "20px",
+              }}
+            >
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+                mb={3}
+              >
+                <Typography
+                  variant="h5"
+                  gutterBottom
+                  style={{ width: "90%", textAlign: "left" }}
+                >
+                  Submitted Incident Details
+                </Typography>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  {!copied ? (
+                    <Button
+                      variant="outlined"
+                      color="inherit"
+                      style={{ width: "10%" }}
+                      onClick={handleCopy}
+                      title="Copy"
+                    >
+                      <FileCopyIcon />
+                    </Button>
+                  ) : (
+                    <CheckCircleIcon sx={{ color: "green" }} />
+                  )}
+                  {copied && (
+                    <div
+                      style={{
+                        marginLeft: "10px",
+                        fontStyle: "italic",
+                        color: "#666",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Copied:{" "}
+                      <span style={{ fontWeight: "bold" }}>
+                        incident details
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </Box>
+              <Container maxWidth="md">
+                <Typography variant="body1" gutterBottom>
+                  <pre style={{ textAlign: "left" }}>{detailsToCopy}</pre>
+                </Typography>
+              </Container>
+            </Container>
+          )}
         </Container>
       </Paper>
     </div>

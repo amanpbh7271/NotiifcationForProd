@@ -85,10 +85,20 @@ const Header = () => {
                 setIncidentNumber(e.target.value);
                 setShowBlinkingText(false);
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch(); // Call handleSearch when Enter key is pressed
+                }
+              }}
               inputRef={inputRef}
             />
             {showBlinkingText && (
-              <Typography variant="subtitle2" color="error">
+              <Typography
+                variant="subtitle2"
+                color="error"
+                onClick={handleSearch} // Add this line
+                style={{ cursor: "pointer" }} // Optional: to change the cursor to a pointer
+              >
                 Please enter INC
               </Typography>
             )}

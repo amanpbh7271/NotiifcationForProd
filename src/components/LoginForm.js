@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
-import { Snackbar, Alert, Button } from '@mui/material'; // Added Button import
+import { Snackbar, Alert, Button } from "@mui/material"; // Added Button import
 import amodocs from "./amdocs_2.png";
 import "../styles/LoginForm.css";
 import HeaderForLogin from "./HeaderForLogin";
@@ -12,7 +12,6 @@ const Container = styled.div`
   background-position: center;
   height: 100vh;
 `;
-
 
 function LoginForm({ onLoginSuccess }) {
   const navigate = useNavigate();
@@ -33,19 +32,25 @@ function LoginForm({ onLoginSuccess }) {
     e.preventDefault();
     try {
       // Call the login API to authenticate the user
-      const loginResponse = await fetch("http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const loginResponse = await fetch(
+        "http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        }
+      );
 
       if (loginResponse.status === 200) {
         const loginData = await loginResponse.json();
 
         localStorage.setItem("token", loginData.token);
-        localStorage.setItem("userDetails", JSON.stringify(loginData.userDetails));
+        localStorage.setItem(
+          "userDetails",
+          JSON.stringify(loginData.userDetails)
+        );
 
         // Emit the onLoginSuccess event with the updated user details
         onLoginSuccess(loginData.userDetails);
@@ -87,7 +92,7 @@ function LoginForm({ onLoginSuccess }) {
         <img src={amodocs} alt="Logo" className="login-logo" />
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Ntnet Id</label>
+            <label htmlFor="username">NTNET ID</label>
             <input
               type="text"
               id="username"
@@ -97,7 +102,7 @@ function LoginForm({ onLoginSuccess }) {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">PASSWORD</label>
             <input
               type="password"
               id="password"
@@ -106,7 +111,7 @@ function LoginForm({ onLoginSuccess }) {
               required
             />
           </div>
-          <button type="submit">Login</button>
+          <button type="submit">LOGIN</button>
         </form>
         <Button
           variant="outlined"
@@ -121,14 +126,18 @@ function LoginForm({ onLoginSuccess }) {
         open={openSnackbar}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        sx={{ width: '400px' }} // Increased width
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        sx={{ width: "400px" }} // Increased width
       >
-        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%', fontSize: '1.2rem', padding: '20px' }}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="error"
+          sx={{ width: "100%", fontSize: "1.2rem", padding: "20px" }}
+        >
           {errorMessage}
         </Alert>
       </Snackbar>
-      <footer> All rights are reserved by Amdocs</footer>
+      <footer> All rights are reserved by @Amdocs</footer>
     </Container>
   );
 }
