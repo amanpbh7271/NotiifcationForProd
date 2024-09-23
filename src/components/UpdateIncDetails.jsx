@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
-import { format, zonedTimeToUtc } from 'date-fns-tz';
+import { format, toZonedTime,toDate } from 'date-fns-tz';
+import { differenceInMinutes } from 'date-fns';
+
 import {
   Container,
   Typography,
@@ -84,6 +86,9 @@ const UpdateIncDetails = () => {
     dataForWhatAppandCopyAfterIncCLosed,
     setDataForWhatAppandCopyIncClosed,
   ] = useState(false);
+
+
+ 
   useEffect(() => {
     const fetchIncidentDetails = async () => {
       try {
@@ -95,6 +100,29 @@ const UpdateIncDetails = () => {
           if (incidentData.length === 0) {
             setIsIncidentEmpty(true);
           } else {
+
+            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Get system's local time zone
+
+// Convert UTC to local time if values are not null
+const impactStartDateTime = incidentData?.[0]?.impactStartDate && incidentData?.[0]?.impactStartTime
+  ? format(toZonedTime(new Date(`${incidentData[0].impactStartDate}T${incidentData[0].impactStartTime}Z`), timeZone), 'yyyy-MM-dd HH:mm')
+  : '';
+const impactEndDateTime = incidentData?.[0]?.impactEndDate && incidentData?.[0]?.impactEndTime
+  ? format(toZonedTime(new Date(`${incidentData[0].impactEndDate}T${incidentData[0].impactEndTime}Z`), timeZone), 'yyyy-MM-dd HH:mm')
+  : '';
+
+// Split the combined date and time into separate date and time variables
+const [impactStartDate, impactStartTime] = impactStartDateTime ? impactStartDateTime.split(' ') : ['', ''];
+const [impactEndDate, impactEndTime] = impactEndDateTime ? impactEndDateTime.split(' ') : ['', ''];
+
+
+  
+            // Convert preUpdates timestamps to local time
+            const preUpdates = incidentData?.[0]?.preUpdates.map((update) => ({
+              ...update,
+              timestamp: format(toZonedTime(new Date(update.timestamp), timeZone), 'yyyy-MM-dd HH:mm'),
+            }));
+         
             setFormData({
               manager: incidentData?.[0]?.manager,
               workAround: incidentData?.[0]?.workAround,
@@ -102,37 +130,37 @@ const UpdateIncDetails = () => {
               bridgeDetails: incidentData?.[0]?.bridgeDetails,
               priority: incidentData?.[0]?.priority,
               issueOwnedBy: incidentData?.[0]?.issueOwnedBy,
-              preUpdates: incidentData?.[0]?.preUpdates,
+              preUpdates: preUpdates,
               incNumber: incidentData?.[0]?.incNumber,
               region: incidentData?.[0]?.region,
               account: incidentData?.[0]?.account,
               status: incidentData?.[0]?.status,
               statusforfileds: incidentData?.[0]?.status,
-              date: format(new Date(), "yyyy-MM-dd"), // Set initial value to today's date
-              time: format(new Date(), "HH:mm"), // Set initial value to current time
+              date: format(new Date(), 'yyyy-MM-dd'), // Set initial value to today's date
+              time: format(new Date(), 'HH:mm'), // Set initial value to current time
               problemStatement: incidentData?.[0]?.problemStatement,
-              impactStartDate: incidentData?.[0]?.impactStartDate ?? "",
-              impactStartTime: incidentData?.[0]?.impactStartTime ?? "",
-              impactEndDate: incidentData?.[0]?.impactEndDate ?? "",
-              impactEndTime: incidentData?.[0]?.impactEndTime ?? "",
-              minutesOfOutage: incidentData?.[0]?.minutesOfOutage ?? "",
-              rootCause: incidentData?.[0]?.rootCause ?? "",
-              affectedServices: incidentData?.[0]?.affectedServices ?? "", // New field
-              problemIdentified: incidentData?.[0]?.problemIdentified ?? "", // New field
-              escalatedLevel: incidentData?.[0]?.escalatedLevel ?? "", // New field
-              expertsContacted: incidentData?.[0]?.expertsContacted ?? "", // New field
-              updateFrequency: incidentData?.[0]?.updateFrequency ?? "", // New field
-              checkedWithOtherAccounts:
-                incidentData?.[0]?.checkedWithOtherAccounts ?? "", // New field
-              coreExpertsInvolved: incidentData?.[0]?.coreExpertsInvolved ?? "", // New field
-              etaForResolution: incidentData?.[0]?.etaForResolution ?? "", // New field
+              impactStartDate: impactStartDate,
+              impactStartTime: impactStartTime,
+              impactEndDate: impactEndDate,
+              impactEndTime: impactEndTime,
+              minutesOfOutage: incidentData?.[0]?.minutesOfOutage ?? '',
+              rootCause: incidentData?.[0]?.rootCause ?? '',
+              affectedServices: incidentData?.[0]?.affectedServices ?? '', // New field
+              problemIdentified: incidentData?.[0]?.problemIdentified ?? '', // New field
+              escalatedLevel: incidentData?.[0]?.escalatedLevel ?? '', // New field
+              expertsContacted: incidentData?.[0]?.expertsContacted ?? '', // New field
+              updateFrequency: incidentData?.[0]?.updateFrequency ?? '', // New field
+              checkedWithOtherAccounts: incidentData?.[0]?.checkedWithOtherAccounts ?? '', // New field
+              coreExpertsInvolved: incidentData?.[0]?.coreExpertsInvolved ?? '', // New field
+              etaForResolution: incidentData?.[0]?.etaForResolution ?? '', // New field
             });
+  
+            // Fetch managers for the account
             try {
               const response = await fetch(
                 `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/managerForAccounts/${incidentData?.[0]?.account}`
               );
               if (response.ok) {
-                console.log("response from managerfor account" + response);
                 const dataforManager = await response.json();
                 setManagersForAccount(dataforManager);
               } else {
@@ -149,9 +177,15 @@ const UpdateIncDetails = () => {
         console.error("Error occurred while fetching incident details:", error);
       }
     };
-
+  
     fetchIncidentDetails();
   }, [id]);
+  
+
+ 
+  
+
+  
 
   // const handleChange = (e) => {
   //   const { name, value } = e.target;
@@ -202,110 +236,169 @@ const UpdateIncDetails = () => {
 
   const whatsappLinkAfterIncClosed = generateWhatsAppLinkIncClosed();
 
+ 
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Get system's local time zone
+  
+      // Convert date and time to UTC
+      const zonedDate = new Date(`${formData.date}T${formData.time}`);
+      const utcDate = toDate(zonedDate, timeZone);
+  
+      // Convert impact start date and time to UTC
+      const impactStartZonedDate = new Date(`${formData.impactStartDate}T${formData.impactStartTime}`);
+      const impactStartUtcDate = toDate(impactStartZonedDate, timeZone);
+  
+      // Convert preUpdates timestamps to UTC
+      const updatedPreStatusUpdates = formData.preUpdates.map((update) => ({
+        ...update,
+        timestamp: toDate(new Date(update.timestamp), timeZone).toISOString(),
+      }));
+  
+      // Add the new status update
       const updatedStatusUpdate = {
-        timestamp: `${formData.date} ${formData.time}`, // Combine date and time
+        timestamp: utcDate.toISOString(), // Combine date and time in UTC
         message: formData.nextUpdate,
       };
-
-      // Create an array with the updated status update and existing preUpdates
-      const updatedPreStatusUpdates = [
-        updatedStatusUpdate,
-        ...formData.preUpdates,
-      ];
-
+  
+      // Include the new status update in preUpdates
+      updatedPreStatusUpdates.unshift(updatedStatusUpdate);
+  
       // Update formData with the new preUpdates
       const updatedFormData = {
         ...formData,
         preUpdates: updatedPreStatusUpdates,
+        date: utcDate.toISOString().split('T')[0], // Set date in UTC
+        time: utcDate.toISOString().split('T')[1].substring(0, 5), // Set time in UTC
+        impactStartDate: impactStartUtcDate.toISOString().split('T')[0], // Set impactStartDate in UTC
+        impactStartTime: impactStartUtcDate.toISOString().split('T')[1].substring(0, 5), // Set impactStartTime in UTC
         newIncNumber: newIncNumber,
         isEditing: isEditing,
       };
 
+    
+  
       // Adjust impactEndDate, impactEndTime, and minutesOfOutage if status is 'Closed'
       if (formData.status === "Closed") {
-        const startDateTime = new Date(
-          `${formData.impactStartDate}T${formData.impactStartTime}`
+        // Convert impact end date and time to UTC
+        const impactEndZonedDate = new Date(`${formData.date}T${formData.time}`);
+        const impactEndUtcDate = toDate(impactEndZonedDate, timeZone);
+        updatedFormData.impactEndDate = impactEndUtcDate.toISOString().split('T')[0]; // Set impactEndDate in UTC
+        updatedFormData.impactEndTime = impactEndUtcDate.toISOString().split('T')[1].substring(0, 5); // Set impactEndTime in UTC
+  
+        const startDateTime = new Date(`${updatedFormData.impactStartDate}T${updatedFormData.impactStartTime}`);
+        const endDateTime = new Date(`${updatedFormData.impactEndDate}T${updatedFormData.impactEndTime}`);
+        const minutesOfOutage = differenceInMinutes(endDateTime, startDateTime); // Calculate total minutes of outage
+  
+        updatedFormData.minutesOfOutage = isNaN(minutesOfOutage) ? "" : minutesOfOutage; // Set minutesOfOutage or empty if calculation fails
+      }
+  
+
+      
+        const response = await axios.post(
+          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/saveInc`,
+          updatedFormData
         );
-        const endDateTime = new Date(`${formData.date}T${formData.time}`);
-        const minutesOfOutage = Math.round(
-          (endDateTime - startDateTime) / (1000 * 60)
-        ); // Convert milliseconds to minutes
+        if (response.status === 200) {
 
-        updatedFormData.impactEndDate = formData.date;
-        updatedFormData.impactEndTime = formData.time;
-        updatedFormData.minutesOfOutage = isNaN(minutesOfOutage)
-          ? ""
-          : minutesOfOutage; // Set minutesOfOutage or empty if calculation fails
+          
+          const impactStartDateTimeAfterSubmit = updatedFormData?.impactStartDate && updatedFormData?.impactStartTime
+  ? format(toZonedTime(new Date(`${updatedFormData.impactStartDate}T${updatedFormData.impactStartTime}Z`), timeZone), 'yyyy-MM-dd HH:mm')
+  : '';
+const [impactStartDateAfterSubmit, impactStartTimeAfterSubmit] = impactStartDateTimeAfterSubmit ? impactStartDateTimeAfterSubmit.split(' ') : ['', ''];
+
+const impactEndDateTime = updatedFormData?.impactEndDate && updatedFormData?.impactEndTime
+  ? format(toZonedTime(new Date(`${updatedFormData.impactEndDate}T${updatedFormData.impactEndTime}Z`), timeZone), 'yyyy-MM-dd HH:mm')
+  : '';
+const [impactEndDate, impactEndTime] = impactEndDateTime ? impactEndDateTime.split(' ') : ['', ''];
+
+      
+const dateAfterSubmit = updatedFormData?.date && updatedFormData?.time
+  ? format(toZonedTime(new Date(`${updatedFormData.date}T${updatedFormData.time}Z`), timeZone), 'yyyy-MM-dd HH:mm')
+  : '';
+const [dateAfterSubmitDate, dateAfterSubmitTime] = dateAfterSubmit ? dateAfterSubmit.split(' ') : ['', ''];
+
+const updatedFormUpdatedData = {
+  ...updatedFormData,
+  date: dateAfterSubmitDate,
+  time: dateAfterSubmitTime,
+  impactStartDate: impactStartDateAfterSubmit, // Set impactStartDate in local time zone
+  impactStartTime: impactStartTimeAfterSubmit, // Set impactStartTime in local time zone
+  impactEndDate: impactEndDate, // Set impactEndDate in local time zone
+  impactEndTime: impactEndTime, // Set impactEndTime in local time zone
+};
+
+setSubmittedData(updatedFormUpdatedData); // Set submitted data
+
+          // Update the WhatsApp and copy details
+          const updatedWhatsAppAndCopy = `
+          ${
+            updatedFormData.status === "Closed"
+              ? "*Below are Final Details for raised INC*"
+              : "*Below are Details for raised INC*"
+          }
+          *Priority*:- ${updatedFormData.priority}
+          *Region*:- ${updatedFormData.region}
+          *Account*:- ${updatedFormData.account}
+          *Incident Number*:- ${
+            isEditing ? updatedFormData.newIncNumber : updatedFormData.incNumber
+          }
+          *Status*:- ${updatedFormData.status}
+          *Description/Problem Statement*:- ${updatedFormData.problemStatement}
+          *Business Impact*:- ${updatedFormData.businessImpact}
+          *Work Around*:- ${updatedFormData.workAround}
+          *Date*:- ${dateAfterSubmitDate}
+          *Time*:- ${dateAfterSubmitTime}
+          *Status Update/Next Step*:- ${updatedFormData.nextUpdate}
+          *Previous Update*:-\\n${updatedFormData.preUpdates
+            .map((update) => `   ${format(toZonedTime(new Date(update.timestamp), timeZone), 'yyyy-MM-dd HH:mm')} -- ${update.message}`)
+            .join("\\n")}
+          *Bridge Details*:- ${updatedFormData.bridgeDetails}
+          
+          *Impact Start Date*:- ${impactStartDateAfterSubmit}
+          *Impact Start Time*:- ${impactStartTimeAfterSubmit}
+          ${
+            updatedFormData.status === "Closed"
+              ? `
+          *Impact End Date*:- ${impactEndDate}
+          *Impact End Time*:- ${impactEndTime}
+          *Minutes of Outage*:- ${updatedFormData.minutesOfOutage}
+          *Root Cause*:- ${updatedFormData.rootCause}`
+              : ""
+          }
+          *Affected Services*:- ${updatedFormData.affectedServices}
+          *Problem Identified*:- ${updatedFormData.problemIdentified}
+          *Escalated Level*:- ${updatedFormData.escalatedLevel}
+          *Experts Contacted*:- ${updatedFormData.expertsContacted}
+          *Update Frequency In Mins*:- ${updatedFormData.updateFrequency}
+          *Checked With Other Accounts*:- ${
+            updatedFormData.checkedWithOtherAccounts
+          }
+          *Core Experts Involved*:- ${updatedFormData.coreExpertsInvolved}
+          *ETA For Resolution*:- ${updatedFormData.etaForResolution}
+          `;
+      
+          setDataForWhatAppandCopy(updatedWhatsAppAndCopy);
+          
+
+          SetUpdateForm(false);
+          SetWhatsAppAndCopy(true);
+        } else {
+          console.error("Failed to update incident details");
+        }
+      } catch (error) {
+        console.error("Error occurred while updating incident details:", error);
       }
-
-      const response = await axios.post(
-        `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/saveInc`,
-        updatedFormData
-      );
-      if (response.status === 200) {
-        setSubmittedData(updatedFormData); // Set submitted data
-
-        // Update the WhatsApp and copy details
-        const updatedWhatsAppAndCopy = `
-        ${
-          updatedFormData.status === "Closed"
-            ? "*Below are Final Details for raised INC*"
-            : "*Below are Details for raised INC*"
-        }
-        *Priority*:- ${updatedFormData.priority}
-        *Region*:- ${updatedFormData.region}
-        *Account*:- ${updatedFormData.account}
-        *Incident Number*:- ${
-          isEditing ? updatedFormData.newIncNumber : updatedFormData.incNumber
-        }
-        *Status*:- ${updatedFormData.status}
-        *Description/Problem Statement*:- ${updatedFormData.problemStatement}
-        *Business Impact*:- ${updatedFormData.businessImpact}
-        *Work Around*:- ${updatedFormData.workAround}
-        *Date*:- ${updatedFormData.date}
-        *Time*:- ${updatedFormData.time}
-        *Status Update/Next Step*:- ${updatedFormData.nextUpdate}
-        *Previous Update*:-\n${updatedFormData.preUpdates
-          .map((update) => `   ${update.timestamp} -- ${update.message}`)
-          .join("\n")}
-        *Bridge Details*:- ${updatedFormData.bridgeDetails}
-        *Impact Start Date*:- ${updatedFormData.impactStartDate}
-        *Impact Start Time*:- ${updatedFormData.impactStartTime}
-        ${
-          updatedFormData.status === "Closed"
-            ? `
-        *Impact End Date*:- ${updatedFormData.impactEndDate}
-        *Impact End Time*:- ${updatedFormData.impactEndTime}
-        *Minutes of Outage*:- ${updatedFormData.minutesOfOutage}
-        *Root Cause*:- ${updatedFormData.rootCause}`
-            : ""
-        }
-        *Affected Services*:- ${updatedFormData.affectedServices}
-        *Problem Identified*:- ${updatedFormData.problemIdentified}
-        *Escalated Level*:- ${updatedFormData.escalatedLevel}
-        *Experts Contacted*:- ${updatedFormData.expertsContacted}
-        *Update Frequency In Mins*:- ${updatedFormData.updateFrequency}
-        *Checked With Other Accounts*:- ${
-          updatedFormData.checkedWithOtherAccounts
-        }
-        *Core Experts Involved*:- ${updatedFormData.coreExpertsInvolved}
-        *ETA For Resolution*:- ${updatedFormData.etaForResolution}
-        `;
-
-        setDataForWhatAppandCopy(updatedWhatsAppAndCopy);
-
-        SetUpdateForm(false);
-        SetWhatsAppAndCopy(true);
-      } else {
-        console.error("Failed to update incident details");
-      }
-    } catch (error) {
-      console.error("Error occurred while updating incident details:", error);
+      
     }
-  };
+  
+  
+  
+  
+
+
 
   const handleClose = () => {
     navigate("/IncidentsList");
@@ -342,8 +435,12 @@ const UpdateIncDetails = () => {
     );
   }
 
-  const detailsToCopy = submittedData
-    ? `
+
+
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Get system's local time zone
+
+const detailsToCopy = submittedData
+  ? `
   *Priority*:- ${submittedData.priority || ""}
   *Region*: ${submittedData.region || ""}
   *Account*: ${submittedData.account || ""}
@@ -359,7 +456,7 @@ const UpdateIncDetails = () => {
   *Status Update/Next Step*:- ${submittedData.nextUpdate || ""}
   *Previous Update*:- 
    ${submittedData.preUpdates
-     .map((update) => `${update.timestamp} -- ${update.message}`)
+     .map((update) => `${format(toZonedTime(new Date(update.timestamp), timeZone), 'yyyy-MM-dd HH:mm')} -- ${update.message}`)
      .join("\n   ")}
   *Bridge Details*:- ${submittedData.bridgeDetails || ""}
   *Impact Start Date*:- ${submittedData.impactStartDate || ""}
@@ -367,8 +464,8 @@ const UpdateIncDetails = () => {
   ${
     submittedData.status === "Closed"
       ? `
-  *Impact End Date*:- ${submittedData.impactEndDate || ""}
-  *Impact End Time*:- ${submittedData.impactEndTime || ""}
+  *Impact End Date*:- ${format(toZonedTime(new Date(submittedData.impactEndDate), timeZone), 'yyyy-MM-dd') || ""}
+  *Impact End Time*:- ${format(toZonedTime(new Date(`1970-01-01T${submittedData.impactEndTime}`), timeZone), 'HH:mm') || ""}
   *Minutes of Outage*:- ${submittedData.minutesOfOutage || ""}
   *Root Cause*:- ${submittedData.rootCause || ""}`
       : ""
@@ -384,13 +481,13 @@ const UpdateIncDetails = () => {
   *Core Experts Involved*:- ${submittedData.coreExpertsInvolved || ""}
   *ETA For Resolution*:- ${submittedData.etaForResolution || ""}
 `
-    : "";
+  : "";
 
-  const handleCopyAfterIncClose = () => {
-    SetUpdateForm(false);
-    setWhatsAppAndCopyAfterIncClose(true);
+const handleCopyAfterIncClose = () => {
+  SetUpdateForm(false);
+  setWhatsAppAndCopyAfterIncClose(true);
 
-    const updatedWhatsAppAndCopyAfterIncClose = `
+  const updatedWhatsAppAndCopyAfterIncClose = `
   ${
     formData.status === "Closed"
       ? "*Below are Final Details for raised INC*"
@@ -404,19 +501,19 @@ const UpdateIncDetails = () => {
   *Description/Problem Statement*:- ${formData.problemStatement}
   *Business Impact*:- ${formData.businessImpact}
   *Work Around*:- ${formData.workAround}
-  *Date*:- ${formData.date}
-  *Time*:- ${formData.time}
+  *Date*:- ${format(toZonedTime(new Date(formData.impactEndDate), timeZone), 'yyyy-MM-dd')}
+  *Time*:- ${format(toZonedTime(new Date(`1970-01-01T${formData.impactEndTime}`), timeZone), 'HH:mm')}
   *Previous Update*:-\n${formData.preUpdates
-    .map((update) => `   ${update.timestamp} -- ${update.message}`)
+    .map((update) => `   ${format(toZonedTime(new Date(update.timestamp), timeZone), 'yyyy-MM-dd HH:mm')} -- ${update.message}`)
     .join("\n")}
   *Bridge Details*:- ${formData.bridgeDetails}
-  *Impact Start Date*:- ${formData.impactStartDate}
-  *Impact Start Time*:- ${formData.impactStartTime}
+  *Impact Start Date*:- ${format(toZonedTime(new Date(formData.impactStartDate), timeZone), 'yyyy-MM-dd')}
+  *Impact Start Time*:- ${format(toZonedTime(new Date(`1970-01-01T${formData.impactStartTime}`), timeZone), 'HH:mm')}
   ${
     formData.status === "Closed"
       ? `
-  *Impact End Date*:- ${formData.impactEndDate}
-  *Impact End Time*:- ${formData.impactEndTime}
+  *Impact End Date*:- ${format(toZonedTime(new Date(formData.impactEndDate), timeZone), 'yyyy-MM-dd')}
+  *Impact End Time*:- ${format(toZonedTime(new Date(`1970-01-01T${formData.impactEndTime}`), timeZone), 'HH:mm')}
   *Minutes of Outage*:- ${formData.minutesOfOutage}
   *Root Cause*:- ${formData.rootCause}`
       : ""
@@ -431,8 +528,9 @@ const UpdateIncDetails = () => {
   *ETA For Resolution*:- ${formData.etaForResolution}
   `;
 
-    setDataForWhatAppandCopyIncClosed(updatedWhatsAppAndCopyAfterIncClose);
-  };
+  setDataForWhatAppandCopyIncClosed(updatedWhatsAppAndCopyAfterIncClose);
+};
+
 
   const handleCopy = () => {
     // Define the text to copy
@@ -872,8 +970,27 @@ const UpdateIncDetails = () => {
                     </Grid>
                   )}
 
-                  {formData.statusforfileds === "Closed" && (
+                 {formData.statusforfileds === "Closed" && (
                     <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Impact End Time"
+                        type="time"
+                        name="impactEndTime"
+                        value={formData.impactEndTime}
+                        onChange={handleChange}
+                        fullWidth
+                        InputLabelProps={{
+                          shrink: true,
+                        }}
+                        InputProps={{
+                          readOnly: formData.statusforfileds === "Closed",
+                        }}
+                      />
+                    </Grid>
+                  )}
+
+                  {formData.statusforfileds === "Closed" && (
+                    <Grid item xs={12} sm={12}>
                       <TextField
                         label="Minutes of Outage"
                         name="minutesOfOutage"

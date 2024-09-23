@@ -81,8 +81,10 @@ const DesktopNotification = () => {
           const data = await response.json();
           if (priority === 'P1') {
             setIncidentNumbersP1(prevState => ({ ...prevState, [accountName]: data }));
+            console.log(`Fetched P1 incidents for ${accountName}:`, data);
           } else if (priority === 'P2') {
             setIncidentNumbersP2(prevState => ({ ...prevState, [accountName]: data }));
+            console.log(`Fetched P2 incidents for ${accountName}:`, data);
           }
         } else {
           console.error(`Failed to fetch incident numbers for priority ${priority} and account ${accountName}:`, response.statusText);
@@ -123,10 +125,13 @@ const DesktopNotification = () => {
 
   useEffect(() => {
     // Function to show custom notification with incident numbers
-    const showCustomNotification = (priority, incidentNumbers, accountName) => {
+    const showCustomNotification = (priority, incidentNumbers) => {
+      const incidents = Object.values(incidentNumbers).flat();
+      if (incidents.length === 0) return; // No incidents to show
+
       // Construct notification message with incident numbers
-      const notificationMessage = `Open ${priority} Incidents for Account: ${accountName}`;
-      const notificationDetails = incidentNumbers ? incidentNumbers.join('\n') : '';
+      const notificationMessage = `Below are the open incidents for ${priority} priority:`;
+      const notificationDetails = incidents.join(', ');
 
       // Add the notification to the state
       setSnackbarMessage(`${notificationMessage}\n${notificationDetails}`);
@@ -134,16 +139,14 @@ const DesktopNotification = () => {
       setOpenSnackbar(true);
     };
 
-    // Show notifications for each account and priority
-    if (accountNames) {
-      accountNames.forEach(accountName => {
-        if (incidentNumbersP1[accountName]?.length > 0) {
-          showCustomNotification('P1', incidentNumbersP1[accountName], accountName);
-        }
-        if (incidentNumbersP2[accountName]?.length > 0) {
-          showCustomNotification('P2', incidentNumbersP2[accountName], accountName);
-        }
-      });
+    // Show notifications for each priority
+    if (accountNames.length > 0) {
+      if (Object.keys(incidentNumbersP1).length > 0) {
+        showCustomNotification('P1', incidentNumbersP1);
+      }
+      if (Object.keys(incidentNumbersP2).length > 0) {
+        showCustomNotification('P2', incidentNumbersP2);
+      }
     }
   }, [incidentNumbersP1, incidentNumbersP2, accountNames]);
 

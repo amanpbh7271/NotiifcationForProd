@@ -48,7 +48,7 @@ const IncidentsList = () => {
     const fetchData = async () => {
       try {
         if (accountNames.length > 0 && !dataFetched) { // Check if accountNames exist and data is not already fetched
-          const response = await fetch(`http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/incidentsForAccounts?accounts=${accountNames.join(',')}`);
+          const response = await fetch(`http://localhost:8080/api/incidentsForAccounts?accounts=${accountNames.join(',')}`);
           if (response.ok) {
             let data = await response.json();
             console.log(data);

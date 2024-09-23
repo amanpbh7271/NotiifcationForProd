@@ -17,7 +17,13 @@ import FileCopyIcon from "@mui/icons-material/FileCopy"; // Importing copy icon
 import Paper from "@mui/material/Paper";
 import { makeStyles } from "@mui/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Importing from @mui/icons-material
-import { format } from "date-fns";
+import { format, toDate } from 'date-fns-tz';
+
+
+
+
+
+
 
 const useStyles = makeStyles(() => ({
   paper: {
@@ -109,51 +115,57 @@ const IncidentContainer = () => {
     setIsIncNumberInDatabase(false);
   };
 
+  
+ 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+  
     try {
-      // Check if the INC number is already in the database
-      const response = await fetch(
-        `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/incDetails/${formData.incNumber}`
-      );
-      if (response.ok) {
-        const incidentData = await response.json();
-        console.log("incident length is ", incidentData.length);
-        if (incidentData.length > 0) {
-          setIsIncNumberInDatabase(true);
-          incNumberRef.current.focus();
-          return; // Exit the function if the INC number is already in the database
-        } else {
-          setIsIncNumberInDatabase(false);
-        }
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Get system's local time zone
+  
+      // Validate date and time
+      if (!formData.date || !formData.time) {
+        throw new Error("Date and time are required");
       }
-
-      // Extract date and time parts
-      const currentDateFormatted = formData.date;
-      const currentTimeFormatted = formData.time;
-
+  
+      // Convert date and time to UTC
+      const zonedDate = new Date(`${formData.date}T${formData.time}`);
+      if (isNaN(zonedDate.getTime())) {
+        throw new Error("Invalid date or time value");
+      }
+      const utcDate = toDate(zonedDate, timeZone);
+  
+      // Validate impact start date and time
+      if (!formData.date || !formData.time) {
+        throw new Error("Impact start date and time are required");
+      }
+  
+      // Convert impact start date and time to UTC
+      const impactStartZonedDate = new Date(`${formData.date}T${formData.time}`);
+      if (isNaN(impactStartZonedDate.getTime())) {
+        throw new Error("Invalid impact start date or time value");
+      }
+      const impactStartUtcDate = toDate(impactStartZonedDate, timeZone);
+  
       // Create pre-updates object
       const preUpdates = [
         {
-          timestamp: `${currentDateFormatted} ${currentTimeFormatted}`,
+          timestamp: utcDate.toISOString(), // Combine date and time in UTC
           message: formData.addStatusUpdate, // Assuming statusUpdate is the message
         },
       ];
-      SetDate(currentDateFormatted);
-      SetTime(currentTimeFormatted);
-
+  
       // Include pre-updates along with other form data
       const formDataWithDateTimeAndPreUpdates = {
         ...formData,
-        date: currentDateFormatted, // Add current date
-        time: currentTimeFormatted, // Add current time
-        impactStartDate: currentDateFormatted, // Set impactStartDate to the same value as date
-        impactStartTime: currentTimeFormatted, // Set impactStartTime to the same value as time
+        date: utcDate.toISOString().split('T')[0], // Add current date in UTC
+        time: utcDate.toISOString().split('T')[1].substring(0, 5), // Add current time in UTC
+        impactStartDate: impactStartUtcDate.toISOString().split('T')[0], // Set impactStartDate in UTC
+        impactStartTime: impactStartUtcDate.toISOString().split('T')[1].substring(0, 5), // Set impactStartTime in UTC
         preUpdates: preUpdates, // Add pre-updates
         nextUpdate: formData.addStatusUpdate,
       };
-
+  
       // Save the incident data
       const saveResponse = await fetch(
         "http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/saveInc",
@@ -181,6 +193,14 @@ const IncidentContainer = () => {
       );
     }
   };
+  
+  
+  
+  
+  
+  
+  
+  
 
   useEffect(() => {
     // Fetch managers when account changes
@@ -290,9 +310,9 @@ const IncidentContainer = () => {
         "\n*Work Around*:-" +
         formData.workAround +
         "\n*Date*:-" +
-        date +
+        formData.date +
         "\n*Time*:-" +
-        time +
+        formData.time +
         "\n*Updated/next Status*:-\n" +
         formData.addStatusUpdate +
         "\n*Bridge Details*:-" +
@@ -336,8 +356,8 @@ const IncidentContainer = () => {
   *Description/Problem Statement*:- ${submittedData.problemStatement || ""}
   *Business Impact*:- ${submittedData.businessImpact || ""}
   *Workaround*:- ${submittedData.workAround || ""}
-  *Date*:- ${submittedData.date || ""}
-  *Time*:- ${submittedData.time || ""}
+  *Date*:- ${formData.date || ""}
+  *Time*:- ${formData.time || ""}
   *Status Update/Next Step*:- ${submittedData.nextUpdate || ""}
   *Bridge Details*:- ${submittedData.bridgeDetails || ""}
   *Affected Services*:- ${submittedData.affectedServices || ""}
