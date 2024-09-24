@@ -1225,7 +1225,7 @@ const handleCopyAfterIncClose = () => {
               {/* Add space between the text and QRCode */}
               <Box mb={2} />
               {/* Call the WhatsAppQRCode component with the phoneNumber and data props */}
-              <QRCode value={whatsappLink} size={256} />{" "}
+              <QRCode value={whatsappLink} size={320} />{" "}
               {/* Adjust the size as needed */}
             </Container>
           )}
@@ -1325,7 +1325,7 @@ const handleCopyAfterIncClose = () => {
               {/* Add space between the text and QRCode */}
               <Box mb={2} />
               {/* Call the WhatsAppQRCode component with the phoneNumber and data props */}
-              <QRCode value={whatsappLinkAfterIncClosed} size={256} />{" "}
+              <QRCode value={whatsappLinkAfterIncClosed} size={320} />{" "}
               {/* Adjust the size as needed */}
             </Container>
           )}

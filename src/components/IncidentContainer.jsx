@@ -121,6 +121,22 @@ const IncidentContainer = () => {
     event.preventDefault();
   
     try {
+        // Check if the INC number is already in the database
+        const response = await fetch(
+          `http://inpnqsmrtop01:9090/logtest-0.0.1-SNAPSHOT/api/incDetails/${formData.incNumber}`
+        );
+        if (response.ok) {
+          const incidentData = await response.json();
+          console.log("incident length is ", incidentData.length);
+          if (incidentData.length > 0) {
+            setIsIncNumberInDatabase(true);
+            incNumberRef.current.focus();
+            return; // Exit the function if the INC number is already in the database
+          } else {
+            setIsIncNumberInDatabase(false);
+          }
+        }
+        
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Get system's local time zone
   
       // Validate date and time
@@ -437,8 +453,7 @@ const IncidentContainer = () => {
   console.log("isAuthenticated", isAuthenticated);
 
   if (!isAuthenticated) {
-    console.log("hadslasd");
-    return <Navigate to="/" />;
+    return <Navigate to="/LoginForm" />;
   }
 
   return (
@@ -808,10 +823,10 @@ const IncidentContainer = () => {
                   mb={2}
                 >
                   <Typography
-                    variant="h5"
-                    gutterBottom
-                    style={{ width: "95%", textAlign: "left" }}
-                  >
+                  variant="h5"
+                  gutterBottom
+                  style={{ width: "95%", textAlign: "left" }}
+                >
                     Scan QR for sending details to WhatsApp
                   </Typography>
                   <IconButton
@@ -823,9 +838,9 @@ const IncidentContainer = () => {
                   </IconButton>
                 </Box>
                 {/* Add space between the text and QRCode */}
-                <Box mb={2} />
+               
                 {/* Call the WhatsAppQRCode component with the phoneNumber and data props */}
-                <QRCode value={whatsappLink} />
+                <QRCode value={whatsappLink} size={256} />{" "}
               </Container>
             </div>
           )}

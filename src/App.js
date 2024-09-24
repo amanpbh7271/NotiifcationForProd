@@ -36,7 +36,7 @@ function App() {
 
             <Route
             path="/IncidentsList" // Update path to match the component
-            element={isAuthenticated ? <IncidentsList/> : <Navigate to="/" />}
+            element={isAuthenticated ? <IncidentsList/> : <Navigate to="/LoginForm" />}
           />
             <Route path="/RegistrationForm" element={<RegistrationForm />} />
           </Routes>
